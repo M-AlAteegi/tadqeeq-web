@@ -62,6 +62,14 @@ async function request<T>(
   return (await res.json()) as T
 }
 
+export interface ChatDetail {
+  id: string
+  created?: string
+  updated?: string
+  preview?: string
+  messages: import('./types').ChatMessage[]
+}
+
 export const api = {
   health: () => request<HealthResponse>('/health'),
 
@@ -69,6 +77,7 @@ export const api = {
   newChat: () => request<{ id: string }>('/api/chats', { method: 'POST', body: '{}' }),
   listChats: (limit = 20) =>
     request<{ chats: ChatSummary[] }>(`/api/chats?limit=${limit}`),
+  getChat: (id: string) => request<ChatDetail>(`/api/chats/${id}`),
   deleteChat: (id: string) => request<void>(`/api/chats/${id}`, { method: 'DELETE' }),
 
   // Library
