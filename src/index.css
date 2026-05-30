@@ -30,3 +30,24 @@ body {
   height: 100vh;
   overflow: hidden;
 }
+
+/* ─── Gemini-style chat input ─────────────────────────────────────────
+   v3's .input-box uses border-radius: 100px which creates an elongated
+   pill when the textarea grows multi-line — looks weird. Reducing to 28px
+   keeps the pill aesthetic when single-line (the corners curve the full
+   height) and naturally becomes a rounded rectangle when content wraps.
+   Also switching align-items from center → flex-end so the send button
+   stays anchored to the bottom-right corner as content grows upward,
+   matching the Gemini composer pattern. */
+.input-box {
+  border-radius: 28px;
+  align-items: flex-end;
+  padding: 8px;
+}
+.input-box textarea {
+  align-self: auto;
+}
+.input-box .attach-btn,
+.input-box .send {
+  margin-bottom: 0;
+}

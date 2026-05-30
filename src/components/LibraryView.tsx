@@ -10,6 +10,7 @@ import type {
 } from '../lib/types'
 import { LibraryCategoryGrid } from './LibraryCategoryGrid'
 import { LibraryDrill } from './LibraryDrill'
+import { LibraryFocusedHeader } from './LibraryFocusedHeader'
 import { LibraryComposer } from './LibraryComposer'
 import { ClausePreviewModal } from './ClausePreviewModal'
 import { Message } from './Message'
@@ -148,6 +149,21 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
     }
     setFocusedClause(c)
     setView('focused')
+    // Drop the category, so when the focused view dispatches a query it
+    // creates a fresh library chat for this specific clause instead of
+    // appending to whatever drill-mode chat was active.
+    setMessages([])
+  }, [])
+
+  // v3-style: from focused → list returns to the clause-list view for the
+  // SAME category (not to welcome). Wipes the primer + messages so the
+  // next clause pick starts clean.
+  const handleBackToList = useCallback(() => {
+    setFocusedClause(null)
+    setComposerText('')
+    setComposerSelection(null)
+    setMessages([])
+    setView('drill')
   }, [])
 
   const handleAsk = useCallback(
@@ -263,8 +279,8 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
   const composerVisible = view !== 'welcome'
 
   const composerPlaceholder =
-    view === 'focused' && focusedClause
-      ? `Edit your question about "${focusedClause.title_en}" and press Send…`
+    view === 'focused' && currentCategory
+      ? `Ask TadqeeqAI about this ${currentCategory.label_en} clause...`
       : currentCategory
         ? `Ask TadqeeqAI about ${currentCategory.label_en} clauses — click Ask on any template to insert it...`
         : 'Pick a category above, then ask TadqeeqAI about a clause...'
@@ -279,7 +295,7 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
             onSelect={handleCategorySelect}
           />
         )}
-        {view !== 'welcome' && currentCategory && (
+        {view === 'drill' && currentCategory && (
           <LibraryDrill
             category={currentCategory}
             clauses={clausesInCategory}
@@ -288,31 +304,12 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
             onAsk={handleAsk}
           />
         )}
-        {view === 'focused' && focusedClause && (
-          <div
-            id="libFocusBreadcrumb"
-            style={{
-              maxWidth: 900,
-              margin: '0 auto',
-              padding: '0 32px 16px',
-              fontSize: 13,
-              color: 'var(--text3)',
-              display: 'flex',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-            }}
-          >
-            <span className="lib-focus-chev">›</span>
-            <span className="lib-focus-clausename">
-              {focusedClause.title_en}
-              <span
-                className={`clause-type-badge ${focusedClause.type ?? 'clause'}`}
-                style={{ marginLeft: 10 }}
-              >
-                {focusedClause.type ?? 'clause'}
-              </span>
-            </span>
-          </div>
+        {view === 'focused' && currentCategory && focusedClause && (
+          <LibraryFocusedHeader
+            category={currentCategory}
+            clause={focusedClause}
+            onBackToList={handleBackToList}
+          />
         )}
         {messages.length > 0 && (
           <div id="libMessages" style={{ maxWidth: 880, margin: '0 auto', padding: '0 32px 24px' }}>
