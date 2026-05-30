@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { ChatSummary, Mode } from '../lib/types'
+import type { ChatSummary, LibraryChatSummary, Mode } from '../lib/types'
 import { ModePill } from './ModePill'
 import { ChatList } from './ChatList'
+import { LibraryChatList } from './LibraryChatList'
 import { useTheme } from '../hooks/useTheme'
 import { api } from '../lib/api'
 
@@ -26,14 +27,23 @@ export function Sidebar({
 }: Props) {
   const [theme, setTheme] = useTheme()
   const [chats, setChats] = useState<ChatSummary[]>([])
+  const [libChats, setLibChats] = useState<LibraryChatSummary[]>([])
 
   const loadChats = useCallback(async () => {
-    if (mode !== 'chat') return
-    try {
-      const { chats } = await api.listChats(20)
-      setChats(chats)
-    } catch {
-      setChats([])
+    if (mode === 'chat') {
+      try {
+        const { chats } = await api.listChats(20)
+        setChats(chats)
+      } catch {
+        setChats([])
+      }
+    } else if (mode === 'library') {
+      try {
+        const { chats } = await api.listLibraryChats(20)
+        setLibChats(chats)
+      } catch {
+        setLibChats([])
+      }
     }
   }, [mode])
 
@@ -43,7 +53,11 @@ export function Sidebar({
 
   async function handleDelete(id: string) {
     try {
-      await api.deleteChat(id)
+      if (mode === 'library') {
+        await api.deleteLibraryChat(id)
+      } else {
+        await api.deleteChat(id)
+      }
       if (activeChatId === id) onChatSelect(null)
       await loadChats()
     } catch {
@@ -103,9 +117,12 @@ export function Sidebar({
               onDelete={handleDelete}
             />
           ) : (
-            <div style={{ padding: '12px', color: 'var(--text3)', fontSize: '12px' }}>
-              (Library history wires up next commit.)
-            </div>
+            <LibraryChatList
+              chats={libChats}
+              activeId={activeChatId}
+              onSelect={onChatSelect}
+              onDelete={handleDelete}
+            />
           )}
         </div>
       )}

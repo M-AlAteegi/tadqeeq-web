@@ -41,6 +41,8 @@ export interface Category {
   id: string
   label_en: string
   label_ar?: string
+  description_en?: string
+  description_ar?: string
 }
 
 export interface ClauseSummary {

@@ -70,6 +70,10 @@ export interface ChatDetail {
   messages: import('./types').ChatMessage[]
 }
 
+export interface LibraryChatDetail extends ChatDetail {
+  category_id?: string | null
+}
+
 export const api = {
   health: () => request<HealthResponse>('/health'),
 
@@ -83,8 +87,16 @@ export const api = {
   // Library
   libraryIndex: () => request<LibraryIndex>('/api/library/index'),
   clause: (id: string) => request<ClauseDetail>(`/api/library/clause/${id}`),
+  newLibraryChat: (categoryId?: string | null) =>
+    request<{ id: string }>('/api/library/chats', {
+      method: 'POST',
+      body: JSON.stringify({ category_id: categoryId ?? null }),
+    }),
   listLibraryChats: (limit = 20) =>
     request<{ chats: LibraryChatSummary[] }>(`/api/library/chats?limit=${limit}`),
+  getLibraryChat: (id: string) => request<LibraryChatDetail>(`/api/library/chats/${id}`),
+  deleteLibraryChat: (id: string) =>
+    request<void>(`/api/library/chats/${id}`, { method: 'DELETE' }),
 }
 
 export { ApiError }
