@@ -10,7 +10,9 @@ interface Props {
   onModeChange: (m: Mode) => void
   activeChatId: string | null
   onChatSelect: (id: string | null) => void
+  onNewChat: () => void
   refreshKey: number
+  collapsed?: boolean
 }
 
 export function Sidebar({
@@ -18,21 +20,13 @@ export function Sidebar({
   onModeChange,
   activeChatId,
   onChatSelect,
+  onNewChat,
   refreshKey,
+  collapsed = false,
 }: Props) {
   const [theme, setTheme] = useTheme()
-  const [providerInfo, setProviderInfo] = useState<string>('')
   const [chats, setChats] = useState<ChatSummary[]>([])
 
-  useEffect(() => {
-    api
-      .health()
-      .then((h) => setProviderInfo(`${h.llm_provider} · ${h.llm_model}`))
-      .catch(() => setProviderInfo('backend unreachable'))
-  }, [])
-
-  // Refetch on mode change AND on parent-triggered refresh (e.g. after a chat
-  // turn lands so the new preview + message count show up in the sidebar).
   const loadChats = useCallback(async () => {
     if (mode !== 'chat') return
     try {
@@ -53,80 +47,163 @@ export function Sidebar({
       if (activeChatId === id) onChatSelect(null)
       await loadChats()
     } catch {
-      /* silent — sidebar list will look stale until next refresh */
+      /* sidebar will look stale until next refresh */
     }
   }
 
+  const showAnalysisSidebar = mode === 'analysis'
+
   return (
     <aside
-      className="flex flex-col w-72 h-full border-r"
-      style={{ background: 'var(--color-app-card)', borderColor: 'var(--color-app-border)' }}
+      className={collapsed ? 'sidebar collapsed' : 'sidebar'}
+      id="sidebar"
+      role="navigation"
+      aria-label="App navigation"
     >
-      <div className="p-4 border-b" style={{ borderColor: 'var(--color-app-border)' }}>
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-semibold tracking-wide" style={{ color: 'var(--color-app-text)' }}>
-            TadqeeqAI
-          </span>
-          <span
-            className="text-xs px-2 py-0.5 rounded-full"
-            style={{ background: 'var(--color-app-card-hover)', color: 'var(--color-app-text-dim)' }}
-          >
-            v4.0-dev
-          </span>
+      <div className="sidebar-header">
+        <div className="logo">
+          <div className="logo-icon-sidebar">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+            </svg>
+          </div>
+          <div className="logo-text-group">
+            <div className="logo-text">TadqeeqAI</div>
+            <ModePill mode={mode} onChange={onModeChange} />
+          </div>
         </div>
-        <ModePill mode={mode} onChange={onModeChange} />
+        <button
+          className="new-chat-btn"
+          id="newChatBtn"
+          onClick={onNewChat}
+          type="button"
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth={2.5} fill="none">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          <span className="new-chat-label">
+            {mode === 'library' ? 'New Clause' : mode === 'analysis' ? 'New Document' : 'New Chat'}
+          </span>
+        </button>
       </div>
 
-      {mode === 'chat' && (
-        <button
-          onClick={() => onChatSelect(null)}
-          className="mx-3 mt-3 px-3 py-2 text-sm rounded-md cursor-pointer flex items-center gap-2"
-          style={{
-            background: 'var(--color-app-card-hover)',
-            color: 'var(--color-app-text)',
-          }}
-        >
-          <span style={{ color: 'var(--color-accent-chat)' }}>+</span>
-          <span>New chat</span>
-        </button>
+      {/* Chat history — visible in chat mode, replaced by analysisSidebar
+          when in analysis mode (matches v3.2 wiring). */}
+      {!showAnalysisSidebar && (
+        <div className="chat-history" id="chatHistory">
+          <div className="history-title">
+            {mode === 'library' ? 'Recent Clauses' : 'Recent Chats'}
+          </div>
+          {mode === 'chat' ? (
+            <ChatList
+              chats={chats}
+              activeId={activeChatId}
+              onSelect={onChatSelect}
+              onDelete={handleDelete}
+            />
+          ) : (
+            <div style={{ padding: '12px', color: 'var(--text3)', fontSize: '12px' }}>
+              (Library history wires up next commit.)
+            </div>
+          )}
+        </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-3">
-        <div
-          className="text-xs uppercase tracking-wider mb-2 px-2"
-          style={{ color: 'var(--color-app-text-dim)' }}
-        >
-          Recent
-        </div>
-        {mode === 'chat' ? (
-          <ChatList
-            chats={chats}
-            activeId={activeChatId}
-            onSelect={onChatSelect}
-            onDelete={handleDelete}
-          />
-        ) : (
-          <div className="text-sm px-2 py-3" style={{ color: 'var(--color-app-text-dim)' }}>
-            (No recent {mode === 'analysis' ? 'documents' : 'discussions'} yet.)
+      {/* Analysis settings sidebar — empty placeholder for now; cards
+          land when #99 ports analysis mode. */}
+      <div
+        id="analysisSidebar"
+        className={showAnalysisSidebar ? 'visible' : ''}
+        aria-label="Analysis settings"
+      >
+        <div className="ana-section-title">Analysis Settings</div>
+        <div className="ana-card" style={{ ['--card-accent' as string]: 'var(--text3)' } as React.CSSProperties}>
+          <div className="ana-card-head">
+            <span>Coming soon — analysis mode lands in the next commit.</span>
           </div>
-        )}
+        </div>
       </div>
 
-      <div
-        className="p-3 border-t text-xs"
-        style={{ borderColor: 'var(--color-app-border)', color: 'var(--color-app-text-dim)' }}
-      >
-        <div className="flex items-center justify-between mb-2">
-          <span title="LLM provider reported by /health">{providerInfo || 'checking…'}</span>
-          <button
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="px-2 py-1 rounded cursor-pointer"
-            style={{ background: 'var(--color-app-card-hover)' }}
-            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+      {/* "Try These" examples — preserved from v3.2 */}
+      {mode === 'chat' && (
+        <div className="examples" style={{ padding: '20px', borderTop: '1px solid var(--border)' }}>
+          <div className="history-title" style={{ padding: '0 0 12px 0' }}>Try These</div>
+          <div
+            className="history-item ex"
+            onClick={() => onNewChat()}
+            style={{ cursor: 'pointer' }}
           >
-            {theme === 'dark' ? '☀' : '☾'}
+            <span>Licensing fees</span>
+            <span style={{
+              padding: '3px 8px',
+              background: 'var(--sama)',
+              color: 'white',
+              borderRadius: '8px',
+              fontWeight: 700,
+              fontSize: '9px',
+            }}>SAMA</span>
+          </div>
+          <div
+            className="history-item ex"
+            onClick={() => onNewChat()}
+            style={{ cursor: 'pointer' }}
+          >
+            <span>Qualified investor</span>
+            <span style={{
+              padding: '3px 8px',
+              background: 'var(--cma)',
+              color: 'white',
+              borderRadius: '8px',
+              fontWeight: 700,
+              fontSize: '9px',
+            }}>CMA</span>
+          </div>
+        </div>
+      )}
+
+      <div
+        className="sidebar-footer"
+        style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.06)' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <button
+            className="theme-toggle-sidebar"
+            id="themeToggle"
+            title="Toggle Theme"
+            aria-label="Toggle colour theme"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          >
+            {theme === 'dark' ? (
+              <svg viewBox="0 0 24 24" className="icon-sun">
+                <circle cx="12" cy="12" r="5" />
+                <line x1="12" y1="1" x2="12" y2="3" />
+                <line x1="12" y1="21" x2="12" y2="23" />
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                <line x1="1" y1="12" x2="3" y2="12" />
+                <line x1="21" y1="12" x2="23" y2="12" />
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" className="icon-moon">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            )}
           </button>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontSize: '10px',
+            color: 'var(--text3)',
+            fontWeight: 700,
+            letterSpacing: '0.05em',
+          }}>
+            <span className="status-dot"></span>
+            TadqeeqAI · v4.0
+          </div>
         </div>
       </div>
     </aside>

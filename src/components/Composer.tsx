@@ -8,27 +8,49 @@ interface Props {
   placeholder?: string
 }
 
+const ICON_SEND = (
+  <svg viewBox="0 0 24 24">
+    <line x1="12" y1="19" x2="12" y2="5" />
+    <polyline points="5 12 12 5 19 12" />
+  </svg>
+)
+
+const ICON_STOP = (
+  <svg viewBox="0 0 24 24">
+    <rect x="6" y="6" width="12" height="12" rx="2" />
+  </svg>
+)
+
+const ICON_ATTACH = (
+  <svg viewBox="0 0 24 24">
+    <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
+  </svg>
+)
+
 export function Composer({
   onSend,
   onStop,
   isStreaming = false,
   disabled = false,
-  placeholder = 'Ask about SAMA or CMA regulations…',
+  placeholder = 'Ask about regulations...',
 }: Props) {
   const [text, setText] = useState('')
   const taRef = useRef<HTMLTextAreaElement>(null)
 
-  // Auto-grow textarea up to ~6 lines, then it scrolls.
   useEffect(() => {
     const ta = taRef.current
     if (!ta) return
     ta.style.height = 'auto'
-    ta.style.height = `${Math.min(ta.scrollHeight, 180)}px`
+    ta.style.height = `${Math.min(ta.scrollHeight, 120)}px`
   }, [text])
 
   function submit() {
+    if (isStreaming) {
+      onStop?.()
+      return
+    }
     const v = text.trim()
-    if (!v || isStreaming || disabled) return
+    if (!v || disabled) return
     onSend(v)
     setText('')
   }
@@ -40,65 +62,52 @@ export function Composer({
     }
   }
 
+  const sendDisabled = !isStreaming && (!text.trim() || disabled)
+
   return (
-    <div
-      className="border-t"
-      style={{ borderColor: 'var(--color-app-border)' }}
-    >
-      <div className="max-w-3xl mx-auto px-6 py-4">
-        <div
-          className="flex items-end gap-2 p-2 rounded-xl"
-          style={{
-            background: 'var(--color-app-card)',
-            border: '1px solid var(--color-app-border)',
-          }}
+    <div className="input-area">
+      <div id="chatInputBox" className="input-box">
+        <button
+          className="attach-btn"
+          type="button"
+          title="Attach Document"
+          aria-label="Attach document for analysis"
         >
-          <textarea
-            ref={taRef}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={handleKey}
-            disabled={disabled || isStreaming}
-            placeholder={placeholder}
-            rows={1}
-            dir="auto"
-            className="flex-1 bg-transparent resize-none px-2 py-1.5 text-sm focus:outline-none disabled:opacity-50"
-            style={{ color: 'var(--color-app-text)', lineHeight: '1.4' }}
-          />
-          {isStreaming ? (
-            <button
-              onClick={onStop}
-              className="px-3 py-1.5 text-sm rounded-md font-medium cursor-pointer"
-              style={{
-                background: 'var(--color-app-card-hover)',
-                color: 'var(--color-app-text)',
-              }}
-              aria-label="Stop generation"
-              title="Stop"
-            >
-              Stop
-            </button>
-          ) : (
-            <button
-              onClick={submit}
-              disabled={!text.trim() || disabled}
-              className="px-3 py-1.5 text-sm rounded-md font-medium cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
-              style={{
-                background: 'var(--color-accent-chat)',
-                color: '#0a0e14',
-              }}
-              aria-label="Send message"
-            >
-              Send
-            </button>
-          )}
-        </div>
-        <div
-          className="text-xs mt-1.5 px-2"
-          style={{ color: 'var(--color-app-text-dim)' }}
+          {ICON_ATTACH}
+        </button>
+        <textarea
+          ref={taRef}
+          id="input"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={handleKey}
+          disabled={disabled && !isStreaming}
+          placeholder={placeholder}
+          rows={1}
+          dir="auto"
+          aria-label="Type your compliance question here"
+          aria-multiline="true"
+        />
+        <button
+          className={isStreaming ? 'send stop' : 'send'}
+          id="send"
+          type="button"
+          disabled={sendDisabled}
+          onClick={submit}
+          aria-label={isStreaming ? 'Stop generation' : 'Send message'}
+          title={isStreaming ? 'Stop generation' : 'Send'}
         >
-          Enter to send · Shift+Enter for newline
-        </div>
+          {isStreaming ? ICON_STOP : ICON_SEND}
+        </button>
+      </div>
+      <div style={{
+        textAlign: 'center',
+        marginTop: '12px',
+        fontSize: '10px',
+        color: 'var(--text3)',
+        fontWeight: 600,
+      }}>
+        AI can make mistakes. Verify important information.
       </div>
     </div>
   )

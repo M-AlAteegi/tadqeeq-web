@@ -16,16 +16,13 @@ export function ChatView({ chatId, onChatCreated, onChatTouched }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
   const [streamingIndex, setStreamingIndex] = useState<number | null>(null)
-  const [loadError, setLoadError] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
-  // Load the active chat whenever the selected id changes.
   useEffect(() => {
     abortRef.current?.abort()
     abortRef.current = null
     setIsStreaming(false)
     setStreamingIndex(null)
-    setLoadError(null)
     if (!chatId) {
       setMessages([])
       return
@@ -34,13 +31,10 @@ export function ChatView({ chatId, onChatCreated, onChatTouched }: Props) {
     api
       .getChat(chatId)
       .then((c) => {
-        if (cancelled) return
-        setMessages(c.messages ?? [])
+        if (!cancelled) setMessages(c.messages ?? [])
       })
-      .catch((e) => {
-        if (cancelled) return
-        setLoadError(String(e))
-        setMessages([])
+      .catch(() => {
+        if (!cancelled) setMessages([])
       })
     return () => {
       cancelled = true
@@ -54,8 +48,7 @@ export function ChatView({ chatId, onChatCreated, onChatTouched }: Props) {
         const created = await api.newChat()
         activeId = created.id
         onChatCreated(activeId)
-      } catch (e) {
-        setLoadError(String(e))
+      } catch {
         return
       }
     }
@@ -85,8 +78,6 @@ export function ChatView({ chatId, onChatCreated, onChatTouched }: Props) {
         if (event.type === 'meta') {
           lastSources = (event.sources as Source[]) ?? []
           lastRegulator = (event.regulator as string) ?? null
-          // Surface meta on the placeholder immediately so the regulator badge
-          // shows before tokens land.
           setMessages((prev) => {
             const copy = [...prev]
             const last = copy[copy.length - 1]
@@ -136,7 +127,9 @@ export function ChatView({ chatId, onChatCreated, onChatTouched }: Props) {
   if (!chatId && messages.length === 0 && !isStreaming) {
     return (
       <>
-        <WelcomeView mode="chat" />
+        <div className="chat" id="chat">
+          <WelcomeView mode="chat" />
+        </div>
         <Composer onSend={handleSend} />
       </>
     )
@@ -144,18 +137,6 @@ export function ChatView({ chatId, onChatCreated, onChatTouched }: Props) {
 
   return (
     <>
-      {loadError && (
-        <div
-          className="mx-6 mt-4 p-3 rounded text-sm"
-          style={{
-            background: 'var(--color-app-card)',
-            border: '1px solid var(--color-app-border)',
-            color: 'var(--color-app-text-dim)',
-          }}
-        >
-          Failed to load chat: {loadError}
-        </div>
-      )}
       <MessageList messages={messages} streamingIndex={streamingIndex} />
       <Composer
         onSend={handleSend}

@@ -1,46 +1,12 @@
-@import "tailwindcss";
+/* tadqeeq-web v4 entry — imports the v3.2 CSS verbatim and adds Plus
+   Jakarta Sans (matches the v3.2 desktop typography). Tailwind is NOT
+   imported here because the v3.2 design is comprehensive and matching it
+   pixel-for-pixel is easier with raw class names than with utility classes. */
 
-@theme {
-  /* Mode-identity accents — match the v3 design language */
-  --color-accent-chat: #00d4aa;
-  --color-accent-library: #60a5fa;
-  --color-accent-analysis: #a78bfa;
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Naskh+Arabic:wght@400;500;700&display=swap");
 
-  /* Dark surface palette */
-  --color-app-bg: #0a0e14;
-  --color-app-card: #11161e;
-  --color-app-card-hover: #1a2029;
-  --color-app-border: #1f2937;
-  --color-app-muted: #6b7280;
-  --color-app-text: #e5e7eb;
-  --color-app-text-dim: #9ca3af;
-}
+@import "./styles/v3.css";
 
 html, body, #root {
   height: 100%;
-  margin: 0;
-  background: var(--color-app-bg);
-  color: var(--color-app-text);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
 }
-
-/* Light-theme override applied via [data-theme="light"] on <html>. */
-html[data-theme="light"] {
-  --color-app-bg: #ffffff;
-  --color-app-card: #f8fafc;
-  --color-app-card-hover: #f1f5f9;
-  --color-app-border: #e5e7eb;
-  --color-app-muted: #6b7280;
-  --color-app-text: #111827;
-  --color-app-text-dim: #4b5563;
-}
-
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background: var(--color-app-border);
-  border-radius: 5px;
-}
-::-webkit-scrollbar-thumb:hover { background: var(--color-app-muted); }

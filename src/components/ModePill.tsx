@@ -5,34 +5,26 @@ interface Props {
   onChange: (m: Mode) => void
 }
 
-const MODES: { id: Mode; label: string; color: string }[] = [
-  { id: 'chat', label: 'Chat', color: 'var(--color-accent-chat)' },
-  { id: 'library', label: 'Library', color: 'var(--color-accent-library)' },
-  { id: 'analysis', label: 'Analysis', color: 'var(--color-accent-analysis)' },
+const MODES: { id: Mode; label: string }[] = [
+  { id: 'chat', label: 'Chat' },
+  { id: 'library', label: 'Library' },
+  { id: 'analysis', label: 'Analysis' },
 ]
 
 export function ModePill({ mode, onChange }: Props) {
   return (
-    <div
-      role="tablist"
-      aria-label="Mode selector"
-      className="flex items-center gap-1 p-1 rounded-full"
-      style={{ background: 'var(--color-app-card)' }}
-    >
+    <div className="mode-switcher" id="modeSwitcher" role="tablist" aria-label="App mode">
       {MODES.map((m) => {
         const active = m.id === mode
         return (
           <button
             key={m.id}
+            type="button"
+            className={active ? 'mode-pill active' : 'mode-pill'}
+            data-mode={m.id}
             role="tab"
             aria-selected={active}
             onClick={() => onChange(m.id)}
-            className="px-3 py-1.5 text-sm rounded-full transition-colors cursor-pointer"
-            style={{
-              background: active ? m.color : 'transparent',
-              color: active ? '#0a0e14' : 'var(--color-app-text-dim)',
-              fontWeight: active ? 600 : 500,
-            }}
           >
             {m.label}
           </button>

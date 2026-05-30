@@ -2,31 +2,63 @@ import type { Mode } from '../lib/types'
 
 interface Props {
   mode: Mode
+  onNewChat: () => void
+  onToggleSidebar?: () => void
 }
 
-const MODE_META: Record<Mode, { label: string; accent: string }> = {
-  chat: { label: 'Chat', accent: 'var(--color-accent-chat)' },
-  library: { label: 'Library', accent: 'var(--color-accent-library)' },
-  analysis: { label: 'Analysis', accent: 'var(--color-accent-analysis)' },
+const MODE_LABEL: Record<Mode, string> = {
+  chat: 'Chat',
+  library: 'Library',
+  analysis: 'Analysis',
 }
 
-export function Header({ mode }: Props) {
-  const { label, accent } = MODE_META[mode]
+export function Header({ mode, onNewChat, onToggleSidebar }: Props) {
+  const badgeClass = `header-title-badge mode-${mode}`
   return (
-    <header
-      className="flex items-center justify-between px-6 py-3 border-b"
-      style={{ background: 'var(--color-app-bg)', borderColor: 'var(--color-app-border)' }}
-    >
-      <div className="flex items-center gap-3">
-        <h1 className="text-lg font-semibold tracking-tight" style={{ color: 'var(--color-app-text)' }}>
-          Saudi Financial Law Assistant
-        </h1>
-        <span
-          className="text-xs px-2 py-0.5 rounded-full"
-          style={{ background: accent, color: '#0a0e14', fontWeight: 600 }}
+    <header className="header">
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <button
+          id="menuBtn"
+          className="menu-btn"
+          title="Toggle Sidebar"
+          aria-label="Toggle sidebar navigation"
+          onClick={onToggleSidebar}
+          type="button"
         >
-          {label}
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <line x1="9" y1="3" x2="9" y2="21" />
+          </svg>
+        </button>
+        <span className="header-title" id="headerTitle">
+          Saudi Financial Law Assistant
+          <span className={badgeClass} id="headerModeBadge">
+            {MODE_LABEL[mode]}
+          </span>
         </span>
+      </div>
+      <div className="header-actions">
+        <button
+          className="header-btn primary"
+          id="newChatBtnHeader"
+          onClick={onNewChat}
+          type="button"
+        >
+          <svg viewBox="0 0 24 24" strokeWidth={2}>
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          <span className="new-chat-label">
+            {mode === 'library' ? 'New Clause' : mode === 'analysis' ? 'New Document' : 'New Chat'}
+          </span>
+        </button>
       </div>
     </header>
   )
