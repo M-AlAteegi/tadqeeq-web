@@ -35,6 +35,7 @@ export function Composer({
   placeholder = 'Ask about regulations...',
 }: Props) {
   const [text, setText] = useState('')
+  const [multiline, setMultiline] = useState(false)
   const taRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -48,6 +49,11 @@ export function Composer({
     // the default overflow-y:auto scrollbar even on empty content. Pin
     // overflow-y to hidden unless we've actually hit the max-height cap.
     ta.style.overflowY = desired > 120 ? 'auto' : 'hidden'
+    // Single-line scrollHeight sits at ~36-40px (line-height 1.45 * 14 +
+    // padding). Crossing ~46-48 means the content wrapped to a 2nd line —
+    // flip to multiline so .input-box.multiline can switch alignment from
+    // center → flex-end (send button drops to bottom-right, Gemini-style).
+    setMultiline(desired > 46)
   }, [text])
 
   function submit() {
@@ -72,7 +78,7 @@ export function Composer({
 
   return (
     <div className="input-area">
-      <div id="chatInputBox" className="input-box">
+      <div id="chatInputBox" className={multiline ? 'input-box multiline' : 'input-box'}>
         <button
           className="attach-btn"
           type="button"
