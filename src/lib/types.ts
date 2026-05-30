@@ -3,12 +3,19 @@
 
 export type Mode = 'chat' | 'library' | 'analysis'
 
+export interface CorpusStats {
+  sama: number
+  cma: number
+  total: number
+}
+
 export interface HealthResponse {
   status: string
   service: string
   version: string
   llm_provider: string
   llm_model: string
+  stats?: CorpusStats
 }
 
 export interface Source {

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../lib/api'
 import { streamPOST } from '../lib/sse'
-import type { ChatMessage, Source } from '../lib/types'
+import type { ChatMessage, CorpusStats, Source } from '../lib/types'
 import { MessageList } from './MessageList'
 import { Composer } from './Composer'
 import { WelcomeView } from './WelcomeView'
@@ -10,9 +10,10 @@ interface Props {
   chatId: string | null
   onChatCreated: (id: string) => void
   onChatTouched: () => void
+  stats?: CorpusStats
 }
 
-export function ChatView({ chatId, onChatCreated, onChatTouched }: Props) {
+export function ChatView({ chatId, onChatCreated, onChatTouched, stats }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
   const [streamingIndex, setStreamingIndex] = useState<number | null>(null)
@@ -128,7 +129,7 @@ export function ChatView({ chatId, onChatCreated, onChatTouched }: Props) {
     return (
       <>
         <div className="chat" id="chat">
-          <WelcomeView mode="chat" />
+          <WelcomeView mode="chat" stats={stats} />
         </div>
         <Composer onSend={handleSend} />
       </>
