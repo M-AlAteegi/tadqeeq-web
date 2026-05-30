@@ -10,3 +10,13 @@
 html, body, #root {
   height: 100%;
 }
+
+/* React mounts <Sidebar> + <main> inside #root instead of directly on body —
+   so #root has to be the flex container that v3.css expects body to be.
+   Without this, .sidebar renders as a block element and .main's flex:1
+   has no flex parent to compute against (main collapses or hides). */
+#root {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
