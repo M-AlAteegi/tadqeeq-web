@@ -37,6 +37,11 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
   const [streamingIndex, setStreamingIndex] = useState<number | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const contentRef = useRef<HTMLDivElement>(null)
+  // Same fresh-send race as ChatView: handleSend → api.newLibraryChat →
+  // onChatCreated → chatId prop change → useEffect would abort the just-
+  // started stream and re-fetch the (empty) new chat, wiping the optimistic
+  // user + assistant bubbles. skipLoadRef holds chats we created ourselves.
+  const skipLoadRef = useRef<string | null>(null)
 
   // One-shot library index load.
   useEffect(() => {
@@ -56,6 +61,10 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
 
   // Load a chat the user picked from the sidebar.
   useEffect(() => {
+    if (chatId && skipLoadRef.current === chatId) {
+      skipLoadRef.current = null
+      return
+    }
     abortRef.current?.abort()
     abortRef.current = null
     setIsStreaming(false)
@@ -187,6 +196,9 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
       try {
         const created = await api.newLibraryChat(currentCategoryId ?? null)
         activeId = created.id
+        // Mark this id as "ours" BEFORE notifying the parent — when the
+        // prop change comes back through useEffect, we skip the abort+load.
+        skipLoadRef.current = activeId
         onChatCreated(activeId)
       } catch {
         return

@@ -18,8 +18,18 @@ export function ChatView({ chatId, onChatCreated, onChatTouched, stats }: Props)
   const [isStreaming, setIsStreaming] = useState(false)
   const [streamingIndex, setStreamingIndex] = useState<number | null>(null)
   const abortRef = useRef<AbortController | null>(null)
+  // When a fresh send triggers api.newChat() inside handleSend, the resulting
+  // chatId prop change re-runs this useEffect, which would abort the just-
+  // started stream and overwrite our optimistic bubbles with an empty
+  // getChat() response. skipLoadRef carries the id of any chat we created
+  // ourselves so we know to skip the load+reset for THAT specific transition.
+  const skipLoadRef = useRef<string | null>(null)
 
   useEffect(() => {
+    if (chatId && skipLoadRef.current === chatId) {
+      skipLoadRef.current = null
+      return
+    }
     abortRef.current?.abort()
     abortRef.current = null
     setIsStreaming(false)
@@ -48,6 +58,9 @@ export function ChatView({ chatId, onChatCreated, onChatTouched, stats }: Props)
       try {
         const created = await api.newChat()
         activeId = created.id
+        // Mark this id as "ours" BEFORE notifying the parent — when the
+        // prop change comes back through useEffect, we skip the abort+load.
+        skipLoadRef.current = activeId
         onChatCreated(activeId)
       } catch {
         return
