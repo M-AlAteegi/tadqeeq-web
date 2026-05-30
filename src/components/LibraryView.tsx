@@ -270,7 +270,7 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
         : 'Pick a category above, then ask TadqeeqAI about a clause...'
 
   return (
-    <div className="library-main" id="libraryMain" style={{ display: 'flex' }}>
+    <div className="library-main" id="libraryMain">
       <div id="libraryContent" ref={contentRef} onScroll={handleScroll}>
         {view === 'welcome' && index && (
           <LibraryCategoryGrid

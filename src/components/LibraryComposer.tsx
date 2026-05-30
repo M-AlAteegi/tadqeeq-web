@@ -55,11 +55,13 @@ export function LibraryComposer({
     if (!ta) return
     ta.style.height = 'auto'
     const cap = expanded ? 330 : 160
-    const desired = Math.min(ta.scrollHeight, cap)
-    ta.style.height = `${desired}px`
-    // Tall = multiple lines wrapped. v3 uses line-height 1.45 * font 14px = ~20px;
-    // anything > ~36px (one line + padding) means we have multi-line content.
-    setShowExpand(ta.scrollHeight > 40)
+    const intrinsic = ta.scrollHeight
+    ta.style.height = `${Math.min(intrinsic, cap)}px`
+    // Only scroll when content actually overflows the cap — otherwise the
+    // border-box padding math makes the scrollbar render on empty input too.
+    ta.style.overflowY = intrinsic > cap ? 'auto' : 'hidden'
+    // Reveal the expand button when content wraps beyond one line.
+    setShowExpand(intrinsic > 40)
   }, [value, expanded])
 
   // When parent supplies a selection range (e.g. after inserting a primer

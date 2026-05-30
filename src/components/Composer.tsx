@@ -41,7 +41,13 @@ export function Composer({
     const ta = taRef.current
     if (!ta) return
     ta.style.height = 'auto'
-    ta.style.height = `${Math.min(ta.scrollHeight, 120)}px`
+    const desired = ta.scrollHeight
+    ta.style.height = `${Math.min(desired, 120)}px`
+    // Global `* { box-sizing: border-box }` in v3.css makes scrollHeight
+    // and the height we set drift apart by the padding amount, which trips
+    // the default overflow-y:auto scrollbar even on empty content. Pin
+    // overflow-y to hidden unless we've actually hit the max-height cap.
+    ta.style.overflowY = desired > 120 ? 'auto' : 'hidden'
   }, [text])
 
   function submit() {
