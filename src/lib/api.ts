@@ -150,4 +150,37 @@ export const api = {
     }),
 }
 
+// ─── Binary downloads (exports) ───────────────────────────────────────
+// Used for the Save Report flow. fetch() the export URL with auth headers,
+// turn the response into a Blob, simulate an anchor click to trigger the
+// browser's file save dialog. Naming comes from Content-Disposition when
+// the server sets it; fall back to the suggested filename.
+
+export async function downloadExport(url: string, suggestedFilename: string): Promise<void> {
+  const headers: Record<string, string> = {}
+  const key = getApiKey()
+  if (key) headers.Authorization = `Bearer ${key}`
+  const res = await fetch(url, { headers })
+  if (!res.ok) {
+    let detail = res.statusText
+    try {
+      const body = (await res.json()) as { detail?: string }
+      if (body?.detail) detail = body.detail
+    } catch { /* ignore */ }
+    throw new ApiError(res.status, `${res.status} ${detail}`)
+  }
+  const blob = await res.blob()
+  const cd = res.headers.get('Content-Disposition') ?? ''
+  const match = cd.match(/filename="?([^"]+)"?/i)
+  const name = match ? match[1] : suggestedFilename
+  const blobUrl = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = blobUrl
+  a.download = name
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
+}
+
 export { ApiError }

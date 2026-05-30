@@ -1,12 +1,18 @@
 // v3.2-faithful: .brief-wrapper > .brief-card with purple-gradient .brief-header
 // + .brief-content markdown body. AI GENERATED pill in the top-right.
+//
+// Language selection: caller's reportLanguage wins when 'en' or 'ar'. 'auto'
+// shows the primary (the language the backend actually synthesised in).
+// 'bilingual' shows EN above, separator, AR below — both come from the
+// localized cache the backend returned.
 
 import { Markdown } from '../lib/markdown'
-import type { BriefResult } from '../lib/types'
+import type { BriefResult, ReportLanguage } from '../lib/types'
 
 interface Props {
   result: BriefResult
   filename: string
+  reportLanguage?: ReportLanguage
 }
 
 const BRIEF_ICON_LARGE = (
@@ -18,7 +24,21 @@ const BRIEF_ICON_LARGE = (
   </svg>
 )
 
-export function AnalysisBriefCard({ result, filename }: Props) {
+function pickReport(result: BriefResult, pref: ReportLanguage): string {
+  if (pref === 'bilingual') {
+    const en = result.localized?.en ?? ''
+    const ar = result.localized?.ar ?? ''
+    if (en && ar) return `${en}\n\n---\n\n${ar}`
+    return en || ar || result.report
+  }
+  if (pref === 'en' || pref === 'ar') {
+    return result.localized?.[pref] || result.report
+  }
+  return result.report
+}
+
+export function AnalysisBriefCard({ result, filename, reportLanguage = 'auto' }: Props) {
+  const content = pickReport(result, reportLanguage)
   return (
     <div className="brief-wrapper" style={{ marginTop: 40 }}>
       <div className="brief-card">
@@ -47,7 +67,7 @@ export function AnalysisBriefCard({ result, filename }: Props) {
           </div>
         </div>
         <div className="brief-content markdown-body" dir="auto">
-          <Markdown content={result.report || ''} />
+          <Markdown content={content} />
         </div>
       </div>
     </div>

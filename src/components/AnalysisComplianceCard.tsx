@@ -1,11 +1,17 @@
 // v3.2-faithful: .compliance-wrapper > .comp-card with score box + .comp-list.
 // Bilingual chrome — AR cards get .comp-list.ar modifier + dir="rtl" so the
 // v3 CSS RTL rules (Noto Naskh, right-align) light up automatically.
+//
+// Language selection: caller's reportLanguage preference wins when it's a
+// concrete 'en' | 'ar'. 'auto' falls back to doc_language. 'bilingual'
+// renders 'en' here (real bilingual side-by-side would need backend
+// support; today we render the chrome's primary language).
 
-import type { ComplianceCheck, ComplianceResult } from '../lib/types'
+import type { ComplianceCheck, ComplianceResult, ReportLanguage } from '../lib/types'
 
 interface Props {
   result: ComplianceResult
+  reportLanguage?: ReportLanguage
 }
 
 const CHECK_ICON = (
@@ -35,19 +41,23 @@ const CHROME: Record<'en' | 'ar', Chrome> = {
   ar: { title: 'تدقيق الامتثال', scoreLabel: 'متوافق', dir: 'rtl' },
 }
 
-function pickChrome(r: ComplianceResult): Chrome {
-  const docLang = (r.doc_language === 'ar' ? 'ar' : 'en') as 'en' | 'ar'
-  let chromeLang: 'en' | 'ar' = docLang
-  // Defensive RTL fallback: if the check content carries Arabic and we
-  // resolved to EN chrome, flip — we never want Arabic glyphs inside an
-  // LTR container with EN alignment rules.
-  if (chromeLang !== 'ar') {
+function pickChromeLang(r: ComplianceResult, pref: ReportLanguage): 'en' | 'ar' {
+  // Explicit user pick wins (en/ar). 'bilingual' renders EN chrome (cell
+  // content is still localized per item via .localized[lang]). 'auto'
+  // tracks doc_language.
+  if (pref === 'en') return 'en'
+  if (pref === 'ar') return 'ar'
+  const docLang = r.doc_language === 'ar' ? 'ar' : 'en'
+  let lang: 'en' | 'ar' = docLang
+  // Defensive RTL fallback: if EN chrome resolved but content is Arabic,
+  // flip — we never want Arabic glyphs in an LTR container.
+  if (lang === 'en') {
     const looksArabic = r.checks.some(
       (c) => ARABIC_RE.test(c.name) || ARABIC_RE.test(c.regulation) || ARABIC_RE.test(c.detail),
     )
-    if (looksArabic) chromeLang = 'ar'
+    if (looksArabic) lang = 'ar'
   }
-  return CHROME[chromeLang]
+  return lang
 }
 
 function scoreColor(score: number): { color: string; dim: string } {
@@ -61,8 +71,9 @@ function statusLabel(c: ComplianceCheck, lang: 'en' | 'ar'): string {
   return c.status === 'compliant' ? 'PASS' : 'WARN'
 }
 
-export function AnalysisComplianceCard({ result }: Props) {
-  const chrome = pickChrome(result)
+export function AnalysisComplianceCard({ result, reportLanguage = 'auto' }: Props) {
+  const lang = pickChromeLang(result, reportLanguage)
+  const chrome = CHROME[lang]
   const isRtl = chrome.dir === 'rtl'
   const itemDir: 'rtl' | 'auto' = isRtl ? 'rtl' : 'auto'
   const { color, dim } = scoreColor(result.score)
@@ -98,12 +109,12 @@ export function AnalysisComplianceCard({ result }: Props) {
               ? { color: '#3fb950', background: 'rgba(63,185,80,0.15)' }
               : { color: '#ffbd2e', background: 'rgba(255,189,46,0.15)' }
             const statusCls = isPass ? 'comp-status pass' : 'comp-status warn'
-            // Pick the localized strings explicitly from .localized so a
-            // chrome flip from EN→AR (or vice versa) re-renders against the
-            // right strings without a backend round-trip.
+            // Pick the localized strings explicitly so a chrome flip
+            // re-renders against the right strings without a backend
+            // round-trip.
             const loc =
-              c.localized && c.localized[isRtl ? 'ar' : 'en']
-                ? c.localized[isRtl ? 'ar' : 'en']
+              c.localized && c.localized[lang]
+                ? c.localized[lang]
                 : { name: c.name, regulation: c.regulation, description: c.description, detail: c.detail }
             return (
               <div key={c.id} className="comp-item" dir={itemDir}>
@@ -114,7 +125,7 @@ export function AnalysisComplianceCard({ result }: Props) {
                   <div className="comp-name" dir={itemDir}>
                     {loc.name}
                     <span className={statusCls} dir={itemDir}>
-                      {statusLabel(c, isRtl ? 'ar' : 'en')}
+                      {statusLabel(c, lang)}
                     </span>
                   </div>
                   <div className="comp-reg" dir={itemDir}>

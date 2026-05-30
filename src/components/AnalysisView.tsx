@@ -3,11 +3,12 @@
 //   2. loaded  — doc uploaded but no report yet; show AnalysisWelcome + DocControls
 //   3. report  — compliance OR brief result rendered; show that + DocControls
 //
-// File upload happens via a hidden <input type="file"> + drag-and-drop on
-// the main panel. .doc-controls (loaded) sits in .input-area; the compliance
-// /brief result replaces the welcome inside the .chat scroll area.
+// Settings (rigor / strictness / report_language) are fetched once on mount
+// and re-read just before runCompliance / runBrief so the user's latest
+// sidebar pick is always honored. The cards also receive the preference so
+// chrome language follows the setting (not just the document's language).
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { api } from '../lib/api'
 import { AnalysisBriefCard } from './AnalysisBriefCard'
 import { AnalysisComplianceCard } from './AnalysisComplianceCard'
@@ -15,7 +16,13 @@ import { AnalysisDocControls } from './AnalysisDocControls'
 import { AnalysisDropOverlay } from './AnalysisDropOverlay'
 import { AnalysisEmptyBar } from './AnalysisEmptyBar'
 import { AnalysisWelcome } from './AnalysisWelcome'
-import type { BriefResult, ComplianceResult, DocumentMetadata } from '../lib/types'
+import { SaveReportMenu } from './SaveReportMenu'
+import type {
+  BriefResult,
+  ComplianceResult,
+  DocumentMetadata,
+  UserSettings,
+} from '../lib/types'
 
 type Report = 'compliance' | 'brief' | null
 
@@ -28,6 +35,19 @@ export function AnalysisView() {
   const [isRunning, setIsRunning] = useState<'compliance' | 'brief' | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [dragActive, setDragActive] = useState(false)
+  const [settings, setSettings] = useState<UserSettings | null>(null)
+
+  // Sidebar persists settings on each change but lives in its own React
+  // tree, so the AnalysisView snapshot needs a refresh on mount and
+  // whenever the user runs a scan or brief (which is the moment they
+  // care that their pick is honored).
+  const refreshSettings = useCallback(() => {
+    api.getSettings().then(setSettings).catch(() => setSettings(null))
+  }, [])
+
+  useEffect(() => {
+    refreshSettings()
+  }, [refreshSettings])
 
   const openFilePicker = useCallback(() => {
     fileInputRef.current?.click()
@@ -51,7 +71,11 @@ export function AnalysisView() {
     setIsRunning('compliance')
     setError(null)
     try {
-      const result = await api.runCompliance(doc.id)
+      // Pull the latest sidebar pick — user may have changed strictness
+      // since the AnalysisView mounted.
+      const fresh = await api.getSettings().catch(() => settings)
+      if (fresh) setSettings(fresh)
+      const result = await api.runCompliance(doc.id, fresh?.strictness ?? 'standard')
       setCompliance(result)
       setReport('compliance')
     } catch (e) {
@@ -66,7 +90,9 @@ export function AnalysisView() {
     setIsRunning('brief')
     setError(null)
     try {
-      const result = await api.runBrief(doc.id)
+      const fresh = await api.getSettings().catch(() => settings)
+      if (fresh) setSettings(fresh)
+      const result = await api.runBrief(doc.id, fresh?.brief_language ?? 'auto')
       setBrief(result)
       setReport('brief')
     } catch (e) {
@@ -114,6 +140,17 @@ export function AnalysisView() {
     }
   }
 
+  // Save menu for the brief report. Backend export endpoints live at
+  // /api/analysis/documents/{id}/brief/export/{md|docx|pdf}. Compliance
+  // export endpoints don't exist server-side yet — flagged separately.
+  const briefSaveUrls = doc
+    ? {
+        pdf: `/api/analysis/documents/${doc.id}/brief/export/pdf`,
+        docx: `/api/analysis/documents/${doc.id}/brief/export/docx`,
+        md: `/api/analysis/documents/${doc.id}/brief/export/markdown`,
+      }
+    : null
+
   return (
     <>
       <AnalysisDropOverlay active={dragActive} />
@@ -142,9 +179,39 @@ export function AnalysisView() {
           </div>
         )}
         {report === 'compliance' && compliance ? (
-          <AnalysisComplianceCard result={compliance} />
+          <>
+            <AnalysisComplianceCard
+              result={compliance}
+              reportLanguage={settings?.report_language ?? 'auto'}
+            />
+            <div
+              style={{
+                textAlign: 'center',
+                marginTop: 16,
+                color: 'var(--text3)',
+                fontSize: 11,
+              }}
+            >
+              Compliance export endpoints aren't wired on the backend yet — coming next commit.
+            </div>
+          </>
         ) : report === 'brief' && brief ? (
-          <AnalysisBriefCard result={brief} filename={doc?.filename ?? 'Document'} />
+          <>
+            <AnalysisBriefCard
+              result={brief}
+              filename={doc?.filename ?? 'Document'}
+              reportLanguage={settings?.brief_language ?? 'auto'}
+            />
+            {briefSaveUrls && (
+              <div style={{ textAlign: 'center', marginTop: 16 }}>
+                <SaveReportMenu
+                  urls={briefSaveUrls}
+                  suggestedBaseName={`tadqeeq-brief-${doc?.filename ?? 'document'}`}
+                  buttonLabel="Save Brief"
+                />
+              </div>
+            )}
+          </>
         ) : (
           <AnalysisWelcome />
         )}
