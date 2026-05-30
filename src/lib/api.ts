@@ -5,11 +5,15 @@
 // at a different backend, set VITE_BACKEND_URL in .env.
 
 import type {
+  BriefResult,
   ChatSummary,
   ClauseDetail,
+  ComplianceResult,
+  DocumentMetadata,
   HealthResponse,
   LibraryChatSummary,
   LibraryIndex,
+  UserSettings,
 } from './types'
 
 const API_KEY_STORAGE = 'tadqeeq.apiKey'
@@ -97,6 +101,53 @@ export const api = {
   getLibraryChat: (id: string) => request<LibraryChatDetail>(`/api/library/chats/${id}`),
   deleteLibraryChat: (id: string) =>
     request<void>(`/api/library/chats/${id}`, { method: 'DELETE' }),
+
+  // Analysis
+  uploadDocument: async (file: File): Promise<DocumentMetadata> => {
+    const fd = new FormData()
+    fd.append('file', file)
+    const headers: Record<string, string> = {}
+    const key = getApiKey()
+    if (key) headers.Authorization = `Bearer ${key}`
+    const res = await fetch('/api/analysis/documents', {
+      method: 'POST',
+      headers,
+      body: fd,
+    })
+    if (!res.ok) {
+      let detail = res.statusText
+      try {
+        const body = (await res.json()) as { detail?: string }
+        if (body?.detail) detail = body.detail
+      } catch { /* ignore */ }
+      throw new ApiError(res.status, `${res.status} ${detail}`)
+    }
+    return (await res.json()) as DocumentMetadata
+  },
+  getDocument: (id: string) => request<DocumentMetadata>(`/api/analysis/documents/${id}`),
+  deleteDocument: (id: string) =>
+    request<void>(`/api/analysis/documents/${id}`, { method: 'DELETE' }),
+  runCompliance: (id: string, strictness?: string) =>
+    request<ComplianceResult>(`/api/analysis/documents/${id}/compliance`, {
+      method: 'POST',
+      body: JSON.stringify({ strictness: strictness ?? 'standard' }),
+    }),
+  getCompliance: (id: string) =>
+    request<ComplianceResult>(`/api/analysis/documents/${id}/compliance`),
+  runBrief: (id: string, reportLanguage?: string) =>
+    request<BriefResult>(`/api/analysis/documents/${id}/brief`, {
+      method: 'POST',
+      body: JSON.stringify({ report_language: reportLanguage ?? 'auto' }),
+    }),
+  getBrief: (id: string) => request<BriefResult>(`/api/analysis/documents/${id}/brief`),
+
+  // Settings
+  getSettings: () => request<UserSettings>('/api/settings'),
+  patchSettings: (patch: Partial<UserSettings>) =>
+    request<UserSettings>('/api/settings', {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    }),
 }
 
 export { ApiError }

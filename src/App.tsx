@@ -3,7 +3,7 @@ import { Sidebar } from './components/Sidebar'
 import { Header } from './components/Header'
 import { ChatView } from './components/ChatView'
 import { LibraryView } from './components/LibraryView'
-import { WelcomeView } from './components/WelcomeView'
+import { AnalysisView } from './components/AnalysisView'
 import { api } from './lib/api'
 import type { CorpusStats, Mode } from './lib/types'
 
@@ -96,11 +96,7 @@ export default function App() {
             onChatTouched={() => setSidebarRefresh((k) => k + 1)}
           />
         )}
-        {mode === 'analysis' && (
-          <div className="chat">
-            <WelcomeView mode="analysis" />
-          </div>
-        )}
+        {mode === 'analysis' && <AnalysisView />}
       </main>
     </>
   )

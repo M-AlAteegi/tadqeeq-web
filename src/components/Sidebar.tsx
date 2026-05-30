@@ -3,6 +3,7 @@ import type { ChatSummary, LibraryChatSummary, Mode } from '../lib/types'
 import { ModePill } from './ModePill'
 import { ChatList } from './ChatList'
 import { LibraryChatList } from './LibraryChatList'
+import { AnalysisSidebarSettings } from './AnalysisSidebarSettings'
 import { useTheme } from '../hooks/useTheme'
 import { api } from '../lib/api'
 
@@ -127,19 +128,13 @@ export function Sidebar({
         </div>
       )}
 
-      {/* Analysis settings sidebar — empty placeholder for now; cards
-          land when #99 ports analysis mode. */}
+      {/* Analysis settings sidebar — visible only in analysis mode. */}
       <div
         id="analysisSidebar"
         className={showAnalysisSidebar ? 'visible' : ''}
         aria-label="Analysis settings"
       >
-        <div className="ana-section-title">Analysis Settings</div>
-        <div className="ana-card" style={{ ['--card-accent' as string]: 'var(--text3)' } as React.CSSProperties}>
-          <div className="ana-card-head">
-            <span>Coming soon — analysis mode lands in the next commit.</span>
-          </div>
-        </div>
+        {showAnalysisSidebar && <AnalysisSidebarSettings />}
       </div>
 
       {/* "Try These" examples — preserved from v3.2 */}
