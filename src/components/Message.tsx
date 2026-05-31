@@ -168,7 +168,11 @@ export function Message({ message, isStreaming }: Props) {
               <span /><span /><span />
             </span>
           )}
-          {!isUser && message.sources && message.sources.length > 0 && (
+          {/* Hold sources until streaming finishes — backend ships them in
+              the `meta` event before any tokens, but reading the answer
+              first is the natural flow. Rendering them mid-stream pulls
+              the eye away from the text and dilutes the affordance. */}
+          {!isUser && !isStreaming && message.sources && message.sources.length > 0 && (
             <div className="sources-area">
               <div className="sources-title">Sources</div>
               <div className="sources-list">
