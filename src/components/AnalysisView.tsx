@@ -16,6 +16,7 @@ import { AnalysisDocControls } from './AnalysisDocControls'
 import { AnalysisDropOverlay } from './AnalysisDropOverlay'
 import { AnalysisEmptyBar } from './AnalysisEmptyBar'
 import { AnalysisWelcome } from './AnalysisWelcome'
+import { useToast } from './Toast'
 import type { AnalysisSaveBundle } from './Header'
 import type {
   BriefResult,
@@ -41,6 +42,7 @@ export function AnalysisView({ onSaveBundleChange }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [dragActive, setDragActive] = useState(false)
   const [settings, setSettings] = useState<UserSettings | null>(null)
+  const toast = useToast()
 
   // Sidebar persists settings on each change but lives in its own React
   // tree, so the AnalysisView snapshot needs a refresh on mount and
@@ -66,8 +68,15 @@ export function AnalysisView({ onSaveBundleChange }: Props) {
       setCompliance(null)
       setBrief(null)
       setReport(null)
+      toast.show(`Uploaded "${meta.filename}"`)
     } catch (e) {
-      setError(`Upload failed: ${e}`)
+      // Strip the leading "Error: " prefix our request() wrapper adds so
+      // the toast reads cleanly. Backend usually returns concrete
+      // messages ("file too large", "unsupported file type", etc.).
+      const raw = String((e as { message?: string })?.message ?? e)
+      const msg = raw.replace(/^error:\s*/i, '').trim() || 'Upload failed'
+      setError(`Upload failed: ${msg}`)
+      toast.show(`Upload failed — ${msg}`, 'info')
     }
   }
 
