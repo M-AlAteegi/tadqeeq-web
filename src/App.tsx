@@ -6,6 +6,7 @@ import { LibraryView } from './components/LibraryView'
 import { AnalysisView } from './components/AnalysisView'
 import { api } from './lib/api'
 import type { CorpusStats, Mode } from './lib/types'
+import type { AnalysisSaveBundle } from './components/Header'
 
 export default function App() {
   const [mode, setMode] = useState<Mode>('chat')
@@ -17,6 +18,10 @@ export default function App() {
   // "Try These" sidebar items set this; ChatView consumes it once on
   // change and immediately sends as a chat question.
   const [pendingChatPrompt, setPendingChatPrompt] = useState<string | null>(null)
+  // AnalysisView reports up the current report's export bundle so the
+  // Header can render Save Report in the same row as Export (v3.2 layout).
+  // Null when no report is showing or analysis isn't the active mode.
+  const [analysisSave, setAnalysisSave] = useState<AnalysisSaveBundle | null>(null)
 
   // One-shot corpus stats fetch (powered by /health). The backend's RAG
   // init takes ~20s so the first call may return zeros; we don't poll
@@ -91,6 +96,8 @@ export default function App() {
           activeChatId={activeIdForMode}
           onNewChat={handleNewChat}
           onToggleSidebar={() => setSidebarCollapsed((v) => !v)}
+          sidebarCollapsed={sidebarCollapsed}
+          analysisSave={mode === 'analysis' ? analysisSave : null}
         />
         {mode === 'chat' && (
           <ChatView
@@ -109,7 +116,7 @@ export default function App() {
             onChatTouched={() => setSidebarRefresh((k) => k + 1)}
           />
         )}
-        {mode === 'analysis' && <AnalysisView />}
+        {mode === 'analysis' && <AnalysisView onSaveBundleChange={setAnalysisSave} />}
       </main>
     </>
   )

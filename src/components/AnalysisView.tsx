@@ -16,7 +16,7 @@ import { AnalysisDocControls } from './AnalysisDocControls'
 import { AnalysisDropOverlay } from './AnalysisDropOverlay'
 import { AnalysisEmptyBar } from './AnalysisEmptyBar'
 import { AnalysisWelcome } from './AnalysisWelcome'
-import { SaveReportMenu } from './SaveReportMenu'
+import type { AnalysisSaveBundle } from './Header'
 import type {
   BriefResult,
   ComplianceResult,
@@ -26,7 +26,12 @@ import type {
 
 type Report = 'compliance' | 'brief' | null
 
-export function AnalysisView() {
+interface Props {
+  // Lifted up so Header can render Save Report in v3.2 position.
+  onSaveBundleChange?: (bundle: AnalysisSaveBundle | null) => void
+}
+
+export function AnalysisView({ onSaveBundleChange }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [doc, setDoc] = useState<DocumentMetadata | null>(null)
   const [report, setReport] = useState<Report>(null)
@@ -146,20 +151,44 @@ export function AnalysisView() {
   const briefDF = settings?.brief_date_format ?? 'dual'
   const complDF = settings?.date_format ?? 'dual'
   const complLang = settings?.report_language ?? 'auto'
-  const briefSaveUrls = doc
-    ? {
-        pdf: `/api/analysis/documents/${doc.id}/brief/export/pdf?date_format=${briefDF}`,
-        docx: `/api/analysis/documents/${doc.id}/brief/export/docx?date_format=${briefDF}`,
-        md: `/api/analysis/documents/${doc.id}/brief/export/markdown?date_format=${briefDF}`,
-      }
-    : null
-  const complianceSaveUrls = doc
-    ? {
-        pdf: `/api/analysis/documents/${doc.id}/compliance/export/pdf?date_format=${complDF}&lang=${complLang}`,
-        docx: `/api/analysis/documents/${doc.id}/compliance/export/docx?date_format=${complDF}&lang=${complLang}`,
-        md: `/api/analysis/documents/${doc.id}/compliance/export/markdown?date_format=${complDF}&lang=${complLang}`,
-      }
-    : null
+
+  // Push the active report's export URLs up to App so the Header renders
+  // the Save button in the v3.2 spot. Clearing on unmount keeps the
+  // Header tidy when the user switches away from analysis mode.
+  useEffect(() => {
+    if (!onSaveBundleChange) return
+    if (!doc) {
+      onSaveBundleChange(null)
+      return
+    }
+    if (report === 'compliance') {
+      onSaveBundleChange({
+        urls: {
+          pdf: `/api/analysis/documents/${doc.id}/compliance/export/pdf?date_format=${complDF}&lang=${complLang}`,
+          docx: `/api/analysis/documents/${doc.id}/compliance/export/docx?date_format=${complDF}&lang=${complLang}`,
+          md: `/api/analysis/documents/${doc.id}/compliance/export/markdown?date_format=${complDF}&lang=${complLang}`,
+        },
+        baseName: `tadqeeq-compliance-${doc.filename}`,
+        buttonLabel: 'Save Compliance',
+      })
+    } else if (report === 'brief') {
+      onSaveBundleChange({
+        urls: {
+          pdf: `/api/analysis/documents/${doc.id}/brief/export/pdf?date_format=${briefDF}`,
+          docx: `/api/analysis/documents/${doc.id}/brief/export/docx?date_format=${briefDF}`,
+          md: `/api/analysis/documents/${doc.id}/brief/export/markdown?date_format=${briefDF}`,
+        },
+        baseName: `tadqeeq-brief-${doc.filename}`,
+        buttonLabel: 'Save Brief',
+      })
+    } else {
+      onSaveBundleChange(null)
+    }
+  }, [doc, report, complDF, complLang, briefDF, onSaveBundleChange])
+
+  useEffect(() => {
+    return () => onSaveBundleChange?.(null)
+  }, [onSaveBundleChange])
 
   return (
     <>
@@ -189,38 +218,16 @@ export function AnalysisView() {
           </div>
         )}
         {report === 'compliance' && compliance ? (
-          <>
-            <AnalysisComplianceCard
-              result={compliance}
-              reportLanguage={settings?.report_language ?? 'auto'}
-            />
-            {complianceSaveUrls && (
-              <div style={{ textAlign: 'center', marginTop: 16 }}>
-                <SaveReportMenu
-                  urls={complianceSaveUrls}
-                  suggestedBaseName={`tadqeeq-compliance-${doc?.filename ?? 'document'}`}
-                  buttonLabel="Save Compliance"
-                />
-              </div>
-            )}
-          </>
+          <AnalysisComplianceCard
+            result={compliance}
+            reportLanguage={settings?.report_language ?? 'auto'}
+          />
         ) : report === 'brief' && brief ? (
-          <>
-            <AnalysisBriefCard
-              result={brief}
-              filename={doc?.filename ?? 'Document'}
-              reportLanguage={settings?.brief_language ?? 'auto'}
-            />
-            {briefSaveUrls && (
-              <div style={{ textAlign: 'center', marginTop: 16 }}>
-                <SaveReportMenu
-                  urls={briefSaveUrls}
-                  suggestedBaseName={`tadqeeq-brief-${doc?.filename ?? 'document'}`}
-                  buttonLabel="Save Brief"
-                />
-              </div>
-            )}
-          </>
+          <AnalysisBriefCard
+            result={brief}
+            filename={doc?.filename ?? 'Document'}
+            reportLanguage={settings?.brief_language ?? 'auto'}
+          />
         ) : (
           <AnalysisWelcome />
         )}

@@ -1,11 +1,27 @@
 import type { Mode } from '../lib/types'
-import { SaveReportMenu } from './SaveReportMenu'
+import { SaveReportMenu, type ExportFormat } from './SaveReportMenu'
+import { useTheme } from '../hooks/useTheme'
+
+export interface AnalysisSaveBundle {
+  urls: Record<ExportFormat, string>
+  baseName: string
+  buttonLabel: string
+}
 
 interface Props {
   mode: Mode
   activeChatId: string | null
   onNewChat: () => void
   onToggleSidebar?: () => void
+  // True when the sidebar is hidden. v3.2 pattern: the header reveals
+  // the secondary chrome (theme toggle, divider, +New Chat button) so the
+  // user keeps access to those actions without the sidebar.
+  sidebarCollapsed?: boolean
+  // Set by AnalysisView when a compliance / brief report has been
+  // produced. Null otherwise. Lives at App level so the Header can render
+  // the Save button right where v3.2 had it (next to Export), instead of
+  // under the card body.
+  analysisSave?: AnalysisSaveBundle | null
 }
 
 const MODE_LABEL: Record<Mode, string> = {
@@ -30,11 +46,36 @@ function buildLibraryUrls(id: string) {
   }
 }
 
-export function Header({ mode, activeChatId, onNewChat, onToggleSidebar }: Props) {
+const SUN_ICON = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="5" />
+    <line x1="12" y1="1" x2="12" y2="3" />
+    <line x1="12" y1="21" x2="12" y2="23" />
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+    <line x1="1" y1="12" x2="3" y2="12" />
+    <line x1="21" y1="12" x2="23" y2="12" />
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+  </svg>
+)
+
+const MOON_ICON = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+  </svg>
+)
+
+export function Header({
+  mode,
+  activeChatId,
+  onNewChat,
+  onToggleSidebar,
+  sidebarCollapsed = false,
+  analysisSave = null,
+}: Props) {
+  const [theme, setTheme] = useTheme()
   const badgeClass = `header-title-badge mode-${mode}`
-  // Show the export menu only when there's an active conversation in chat
-  // or library mode. Analysis save lives in the main panel (next to the
-  // compliance / brief card) since each report has its own URL bundle.
   const showExport = activeChatId && (mode === 'chat' || mode === 'library')
   const exportUrls = showExport
     ? mode === 'chat'
@@ -46,6 +87,10 @@ export function Header({ mode, activeChatId, onNewChat, onToggleSidebar }: Props
       ? `tadqeeq-chat-${activeChatId}`
       : `tadqeeq-library-${activeChatId}`
     : ''
+
+  // .visible toggling matches v3.2 updateHeaderState() — the CSS in
+  // v3.css keeps these elements at width/opacity 0 until .visible lands.
+  const collapseClass = sidebarCollapsed ? 'visible' : ''
 
   return (
     <header className="header">
@@ -78,6 +123,17 @@ export function Header({ mode, activeChatId, onNewChat, onToggleSidebar }: Props
         </span>
       </div>
       <div className="header-actions">
+        <button
+          id="themeToggleHeader"
+          className={collapseClass}
+          title="Switch Theme"
+          aria-label="Switch colour theme"
+          type="button"
+          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+        >
+          {theme === 'dark' ? SUN_ICON : MOON_ICON}
+        </button>
+        <div id="headerDivider" className={collapseClass}></div>
         {exportUrls && (
           <SaveReportMenu
             urls={exportUrls}
@@ -86,8 +142,19 @@ export function Header({ mode, activeChatId, onNewChat, onToggleSidebar }: Props
             primary={false}
           />
         )}
+        {analysisSave && (
+          // Wrapper id mirrors v3.2 so the entry animation in v3.css fires.
+          <div id="analysisSaveWrap" style={{ display: 'inline-block' }}>
+            <SaveReportMenu
+              urls={analysisSave.urls}
+              suggestedBaseName={analysisSave.baseName}
+              buttonLabel={analysisSave.buttonLabel}
+              primary
+            />
+          </div>
+        )}
         <button
-          className="header-btn primary"
+          className={`header-btn primary ${collapseClass}`.trim()}
           id="newChatBtnHeader"
           onClick={onNewChat}
           type="button"
