@@ -1612,8 +1612,21 @@
         }
         .attach-btn:hover { background: rgba(255, 255, 255, 0.2); transform: scale(1.05); }
         .attach-btn svg { width: 20px; height: 20px; stroke: var(--text2); stroke-width: 2.5; fill: none; }
+        /* Bootstrap-style fill icons (file-earmark-arrow-up etc.) ship
+           with fill="currentColor" baked into the SVG. The default
+           .attach-btn rule above sets fill: none + a thick stroke,
+           which renders fill icons as a chunky outline with sharp
+           edges. Match by attribute so we only target true fill icons
+           and leave the legacy stroke-based glyphs alone. */
+        .attach-btn svg[fill="currentColor"] {
+            fill: currentColor;
+            stroke: none;
+            color: var(--text2);
+            width: 18px; height: 18px;
+        }
         [data-theme="light"] .attach-btn { background: rgba(0,0,0,0.05); color: var(--text); }
         [data-theme="light"] .attach-btn svg { stroke: var(--text); }
+        [data-theme="light"] .attach-btn svg[fill="currentColor"] { color: var(--text); }
 
         /* Theme Toggle & Avatar Icons */
         .theme-toggle-sidebar {
@@ -2280,6 +2293,18 @@
             display: flex; align-items: center; gap: 8px; transition: all 0.2s ease;
         }
         .action-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.5; }
+        /* Bootstrap-style fill icons inside .action-btn (file-earmark-arrow-up
+           on the empty bar / doc-bar swap, download glyph on Save Report).
+           Default rule above sets fill: none + thick stroke which renders
+           fill icons as a chunky outline; match by attribute so we only
+           target true fill icons and the stroke-based Scan/Brief/Back
+           glyphs render unchanged. */
+        .action-btn svg[fill="currentColor"] {
+            fill: currentColor;
+            stroke: none;
+            width: 16px;
+            height: 16px;
+        }
 
         /* Button Variants */
         .action-btn.brief { background: rgba(139, 92, 246, 0.15); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.2); }
