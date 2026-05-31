@@ -16,6 +16,7 @@ import { AnalysisDocControls } from './AnalysisDocControls'
 import { AnalysisDropOverlay } from './AnalysisDropOverlay'
 import { AnalysisEmptyBar } from './AnalysisEmptyBar'
 import { AnalysisWelcome } from './AnalysisWelcome'
+import { AnalysisProgressModal } from './AnalysisProgressModal'
 import { ScrollToBottomButton } from './ScrollToBottomButton'
 import { useToast } from './Toast'
 import type { AnalysisSaveBundle } from './Header'
@@ -44,6 +45,9 @@ export function AnalysisView({ onSaveBundleChange }: Props) {
   const [dragActive, setDragActive] = useState(false)
   const [settings, setSettings] = useState<UserSettings | null>(null)
   const toast = useToast()
+  // Single controller for whichever analysis run is in flight.
+  // AnalysisProgressModal's Cancel button calls abort() on this.
+  const runAbortRef = useRef<AbortController | null>(null)
 
   // Sidebar persists settings on each change but lives in its own React
   // tree, so the AnalysisView snapshot needs a refresh on mount and
@@ -85,17 +89,24 @@ export function AnalysisView({ onSaveBundleChange }: Props) {
     if (!doc) return
     setIsRunning('compliance')
     setError(null)
+    const ctrl = new AbortController()
+    runAbortRef.current = ctrl
     try {
       // Pull the latest sidebar pick — user may have changed strictness
       // since the AnalysisView mounted.
       const fresh = await api.getSettings().catch(() => settings)
       if (fresh) setSettings(fresh)
-      const result = await api.runCompliance(doc.id, fresh?.strictness ?? 'standard')
+      const result = await api.runCompliance(doc.id, fresh?.strictness ?? 'standard', ctrl.signal)
       setCompliance(result)
       setReport('compliance')
     } catch (e) {
-      setError(`Compliance scan failed: ${e}`)
+      if ((e as { name?: string })?.name === 'AbortError') {
+        toast.show('Scan cancelled', 'info')
+      } else {
+        setError(`Compliance scan failed: ${e}`)
+      }
     } finally {
+      runAbortRef.current = null
       setIsRunning(null)
     }
   }
@@ -104,17 +115,28 @@ export function AnalysisView({ onSaveBundleChange }: Props) {
     if (!doc) return
     setIsRunning('brief')
     setError(null)
+    const ctrl = new AbortController()
+    runAbortRef.current = ctrl
     try {
       const fresh = await api.getSettings().catch(() => settings)
       if (fresh) setSettings(fresh)
-      const result = await api.runBrief(doc.id, fresh?.brief_language ?? 'auto')
+      const result = await api.runBrief(doc.id, fresh?.brief_language ?? 'auto', ctrl.signal)
       setBrief(result)
       setReport('brief')
     } catch (e) {
-      setError(`Brief generation failed: ${e}`)
+      if ((e as { name?: string })?.name === 'AbortError') {
+        toast.show('Brief cancelled', 'info')
+      } else {
+        setError(`Brief generation failed: ${e}`)
+      }
     } finally {
+      runAbortRef.current = null
       setIsRunning(null)
     }
+  }
+
+  function handleCancelRun() {
+    runAbortRef.current?.abort()
   }
 
   async function handleRemove() {
@@ -205,6 +227,7 @@ export function AnalysisView({ onSaveBundleChange }: Props) {
 
   return (
     <>
+      {isRunning && <AnalysisProgressModal kind={isRunning} onCancel={handleCancelRun} />}
       <AnalysisDropOverlay active={dragActive} />
       <div
         className="chat"

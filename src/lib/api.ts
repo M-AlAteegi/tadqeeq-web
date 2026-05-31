@@ -127,17 +127,19 @@ export const api = {
   getDocument: (id: string) => request<DocumentMetadata>(`/api/analysis/documents/${id}`),
   deleteDocument: (id: string) =>
     request<void>(`/api/analysis/documents/${id}`, { method: 'DELETE' }),
-  runCompliance: (id: string, strictness?: string) =>
+  runCompliance: (id: string, strictness?: string, signal?: AbortSignal) =>
     request<ComplianceResult>(`/api/analysis/documents/${id}/compliance`, {
       method: 'POST',
       body: JSON.stringify({ strictness: strictness ?? 'standard' }),
+      signal,
     }),
   getCompliance: (id: string) =>
     request<ComplianceResult>(`/api/analysis/documents/${id}/compliance`),
-  runBrief: (id: string, reportLanguage?: string) =>
+  runBrief: (id: string, reportLanguage?: string, signal?: AbortSignal) =>
     request<BriefResult>(`/api/analysis/documents/${id}/brief`, {
       method: 'POST',
       body: JSON.stringify({ report_language: reportLanguage ?? 'auto' }),
+      signal,
     }),
   getBrief: (id: string) => request<BriefResult>(`/api/analysis/documents/${id}/brief`),
 

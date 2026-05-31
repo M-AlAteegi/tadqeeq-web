@@ -1152,6 +1152,35 @@
             z-index: 60;
             display: flex; flex-direction: column; gap: 14px;
         }
+
+        /* Indeterminate progress bar used by AnalysisProgressModal.
+           Backend doesn't emit a real progress signal for scan / brief,
+           so the bar just continuously slides — communicates "work is
+           happening" without lying about completion %. */
+        .progress-indeterminate {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+        [data-theme="light"] .progress-indeterminate {
+            background: rgba(0, 0, 0, 0.08);
+        }
+        .progress-indeterminate .progress-bar {
+            position: absolute;
+            top: 0; bottom: 0; left: 0;
+            width: 40%;
+            background: linear-gradient(90deg,
+                rgba(45, 212, 191, 0) 0%,
+                var(--accent) 50%,
+                rgba(45, 212, 191, 0) 100%);
+            animation: progressSlide 1.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+        @keyframes progressSlide {
+            0%   { transform: translateX(-100%); }
+            100% { transform: translateX(350%); }
+        }
         #analysisSaveWrap[style*="display: inline-block"],
         #analysisSaveWrap[style*="display: block"] {
             transform: translateX(0) scale(1);
