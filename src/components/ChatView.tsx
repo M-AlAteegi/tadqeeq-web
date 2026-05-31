@@ -164,7 +164,12 @@ export function ChatView({
         <div className="chat" id="chat">
           <WelcomeView mode="chat" stats={stats} />
         </div>
-        <ScrollToBottomButton targetId="chat" />
+        {/* key forces a remount whenever we toggle welcome ↔ messages,
+            so ScrollToBottomButton's effect re-binds to the fresh #chat
+            DOM node. Without this, the button captures the first #chat
+            element it sees on mount and silently stops working once the
+            React tree swaps in MessageList's div. */}
+        <ScrollToBottomButton key="chat-welcome" targetId="chat" />
         <Composer onSend={handleSend} />
       </>
     )
@@ -173,7 +178,7 @@ export function ChatView({
   return (
     <>
       <MessageList messages={messages} streamingIndex={streamingIndex} />
-      <ScrollToBottomButton targetId="chat" />
+      <ScrollToBottomButton key={`chat-msg-${chatId ?? 'fresh'}`} targetId="chat" />
       <Composer
         onSend={handleSend}
         onStop={handleStop}
