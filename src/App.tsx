@@ -22,6 +22,10 @@ export default function App() {
   // Header can render Save Report in the same row as Export (v3.2 layout).
   // Null when no report is showing or analysis isn't the active mode.
   const [analysisSave, setAnalysisSave] = useState<AnalysisSaveBundle | null>(null)
+  // Chat composer's attach button sets this to true; AnalysisView consumes
+  // it once on mount and immediately opens its file picker. Cleared by
+  // the consumer so a subsequent mode switch back to chat doesn't re-fire.
+  const [analysisAutoPick, setAnalysisAutoPick] = useState(false)
 
   // One-shot corpus stats fetch (powered by /health). The backend's RAG
   // init takes ~20s so the first call may return zeros; we don't poll
@@ -107,6 +111,13 @@ export default function App() {
             stats={stats}
             pendingPrompt={pendingChatPrompt}
             onPromptConsumed={() => setPendingChatPrompt(null)}
+            onAttach={() => {
+              // Composer attach → land the user in analysis mode and
+              // pop the picker. The flag survives the mode swap, then
+              // AnalysisView consumes it on mount.
+              setMode('analysis')
+              setAnalysisAutoPick(true)
+            }}
           />
         )}
         {mode === 'library' && (
@@ -116,7 +127,13 @@ export default function App() {
             onChatTouched={() => setSidebarRefresh((k) => k + 1)}
           />
         )}
-        {mode === 'analysis' && <AnalysisView onSaveBundleChange={setAnalysisSave} />}
+        {mode === 'analysis' && (
+          <AnalysisView
+            onSaveBundleChange={setAnalysisSave}
+            autoOpenPicker={analysisAutoPick}
+            onAutoPickConsumed={() => setAnalysisAutoPick(false)}
+          />
+        )}
       </main>
     </>
   )

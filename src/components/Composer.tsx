@@ -6,6 +6,10 @@ interface Props {
   isStreaming?: boolean
   disabled?: boolean
   placeholder?: string
+  // Fired by the attach button. v3.2 semantics: hop into analysis mode
+  // and pop the file picker, so attaching from chat lands you in the
+  // surface that actually consumes the file.
+  onAttach?: () => void
 }
 
 const ICON_SEND = (
@@ -37,6 +41,7 @@ export function Composer({
   isStreaming = false,
   disabled = false,
   placeholder = 'Ask about regulations...',
+  onAttach,
 }: Props) {
   const [text, setText] = useState('')
   const [multiline, setMultiline] = useState(false)
@@ -88,6 +93,8 @@ export function Composer({
           type="button"
           title="Attach Document"
           aria-label="Attach document for analysis"
+          onClick={onAttach}
+          disabled={!onAttach}
         >
           {ICON_ATTACH}
         </button>

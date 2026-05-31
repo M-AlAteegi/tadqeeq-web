@@ -32,9 +32,19 @@ type Report = 'compliance' | 'brief' | null
 interface Props {
   // Lifted up so Header can render Save Report in v3.2 position.
   onSaveBundleChange?: (bundle: AnalysisSaveBundle | null) => void
+  // Set by App when the chat composer's attach button was clicked.
+  // AnalysisView pops its file picker on the next tick and clears
+  // the flag through onAutoPickConsumed so it doesn't re-fire on
+  // every render.
+  autoOpenPicker?: boolean
+  onAutoPickConsumed?: () => void
 }
 
-export function AnalysisView({ onSaveBundleChange }: Props) {
+export function AnalysisView({
+  onSaveBundleChange,
+  autoOpenPicker,
+  onAutoPickConsumed,
+}: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [doc, setDoc] = useState<DocumentMetadata | null>(null)
   const [report, setReport] = useState<Report>(null)
@@ -64,6 +74,18 @@ export function AnalysisView({ onSaveBundleChange }: Props) {
   const openFilePicker = useCallback(() => {
     fileInputRef.current?.click()
   }, [])
+
+  // Honor an attach-button click that originated in chat mode. The flag
+  // arrives via prop after App swapped modes; pop the picker on the
+  // next tick (file input has to be mounted first) and clear the flag.
+  useEffect(() => {
+    if (!autoOpenPicker) return
+    const id = window.setTimeout(() => {
+      openFilePicker()
+      onAutoPickConsumed?.()
+    }, 0)
+    return () => window.clearTimeout(id)
+  }, [autoOpenPicker, openFilePicker, onAutoPickConsumed])
 
   async function handleFile(file: File) {
     setError(null)

@@ -14,6 +14,9 @@ interface Props {
   stats?: CorpusStats
   pendingPrompt?: string | null
   onPromptConsumed?: () => void
+  // Composer attach-button click — App handles the mode swap + picker
+  // open; ChatView just forwards the intent.
+  onAttach?: () => void
 }
 
 export function ChatView({
@@ -23,6 +26,7 @@ export function ChatView({
   stats,
   pendingPrompt,
   onPromptConsumed,
+  onAttach,
 }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
@@ -170,7 +174,7 @@ export function ChatView({
             element it sees on mount and silently stops working once the
             React tree swaps in MessageList's div. */}
         <ScrollToBottomButton key="chat-welcome" targetId="chat" />
-        <Composer onSend={handleSend} />
+        <Composer onSend={handleSend} onAttach={onAttach} />
       </>
     )
   }
@@ -183,6 +187,7 @@ export function ChatView({
         onSend={handleSend}
         onStop={handleStop}
         isStreaming={isStreaming}
+        onAttach={onAttach}
       />
     </>
   )
