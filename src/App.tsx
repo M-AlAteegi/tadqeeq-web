@@ -14,6 +14,9 @@ export default function App() {
   const [sidebarRefresh, setSidebarRefresh] = useState(0)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [stats, setStats] = useState<CorpusStats | undefined>(undefined)
+  // "Try These" sidebar items set this; ChatView consumes it once on
+  // change and immediately sends as a chat question.
+  const [pendingChatPrompt, setPendingChatPrompt] = useState<string | null>(null)
 
   // One-shot corpus stats fetch (powered by /health). The backend's RAG
   // init takes ~20s so the first call may return zeros; we don't poll
@@ -72,6 +75,13 @@ export default function App() {
         activeChatId={activeIdForMode}
         onChatSelect={handleChatSelect}
         onNewChat={handleNewChat}
+        onSuggestion={(q) => {
+          // Switch to chat + fresh chat + queue the prompt; ChatView
+          // picks it up via its pendingPrompt prop.
+          setMode('chat')
+          setActiveChatId(null)
+          setPendingChatPrompt(q)
+        }}
         refreshKey={sidebarRefresh}
         collapsed={sidebarCollapsed}
       />
@@ -88,6 +98,8 @@ export default function App() {
             onChatCreated={setActiveChatId}
             onChatTouched={() => setSidebarRefresh((k) => k + 1)}
             stats={stats}
+            pendingPrompt={pendingChatPrompt}
+            onPromptConsumed={() => setPendingChatPrompt(null)}
           />
         )}
         {mode === 'library' && (

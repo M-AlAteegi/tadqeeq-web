@@ -14,8 +14,31 @@ import { LibraryFocusedHeader } from './LibraryFocusedHeader'
 import { LibraryComposer } from './LibraryComposer'
 import { ClausePreviewModal } from './ClausePreviewModal'
 import { Message } from './Message'
+import { useToast } from './Toast'
 
 type View = 'welcome' | 'drill' | 'focused'
+
+// Parse the canonical "I'm reviewing the following <title>. Please help me
+// adapt or assess it:" / Arabic "أراجع البند التالي: <title>. ساعدني" header
+// the composer writes after Insert/Ask. If it matches a known clause from
+// the library index, returns its id so LibraryView can restore the FOCUSED
+// view when the chat is reopened from the sidebar.
+function matchPrimer(text: string, libraryIndex: LibraryIndex | null): { clauseId: string } | null {
+  if (!text || !libraryIndex) return null
+  const enRe = /^I'm reviewing the following (.+?)\. Please help me adapt or assess it:/
+  const arRe = /^أراجع البند التالي:\s*(.+?)\.\s*ساعدني/
+  const enMatch = text.match(enRe)
+  const arMatch = text.match(arRe)
+  const title = (enMatch?.[1] ?? arMatch?.[1] ?? '').trim()
+  if (!title) return null
+  const lower = title.toLowerCase()
+  const summary = libraryIndex.clauses.find(
+    (c) =>
+      (c.title_en && c.title_en.trim().toLowerCase() === lower) ||
+      (c.title_ar && c.title_ar.trim() === title),
+  )
+  return summary ? { clauseId: summary.id } : null
+}
 
 interface Props {
   chatId: string | null
@@ -42,6 +65,7 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
   // started stream and re-fetch the (empty) new chat, wiping the optimistic
   // user + assistant bubbles. skipLoadRef holds chats we created ourselves.
   const skipLoadRef = useRef<string | null>(null)
+  const toast = useToast()
 
   // One-shot library index load.
   useEffect(() => {
@@ -59,7 +83,11 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
     }
   }, [])
 
-  // Load a chat the user picked from the sidebar.
+  // Load a chat the user picked from the sidebar. If the first user message
+  // matches the primer pattern ('I'm reviewing the following X. Please help
+  // me adapt...'), restore the FOCUSED view bound to that clause — so the
+  // sidebar history takes you back where you left off, not just to the
+  // category's clause list.
   useEffect(() => {
     if (chatId && skipLoadRef.current === chatId) {
       skipLoadRef.current = null
@@ -80,10 +108,26 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
     let cancelled = false
     api
       .getLibraryChat(chatId)
-      .then((c) => {
+      .then(async (c) => {
         if (cancelled) return
         setMessages(c.messages ?? [])
-        // Reopen in the category the chat is bound to (if known).
+
+        const firstUser = (c.messages ?? []).find((m) => m.role === 'user')
+        const primerMatch = firstUser ? matchPrimer(firstUser.content, index) : null
+
+        if (primerMatch) {
+          try {
+            const clause = await api.clause(primerMatch.clauseId)
+            if (cancelled) return
+            setFocusedClause(clause)
+            setCurrentCategoryId(clause.category)
+            setView('focused')
+            return
+          } catch {
+            /* fall through to category view */
+          }
+        }
+
         if (c.category_id) {
           setCurrentCategoryId(c.category_id)
           setView('drill')
@@ -97,7 +141,7 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
     return () => {
       cancelled = true
     }
-  }, [chatId])
+  }, [chatId, index])
 
   // Auto-scroll the library content area to bottom when new messages land,
   // unless the user has scrolled up.
@@ -196,6 +240,15 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
   async function handleSend() {
     const text = composerText.trim()
     if (!text) return
+
+    // v3.2 rule: if the user inserted a clause primer but didn't fill in
+    // [Your question here], block send — they haven't actually written a
+    // question yet, just dropped boilerplate. Same logic for the AR
+    // [ضع سؤالك هنا] placeholder.
+    if (text.includes('[Your question here]') || text.includes('[ضع سؤالك هنا]')) {
+      toast.show('Replace the question placeholder with your actual question first', 'info')
+      return
+    }
 
     let activeId = chatId
     if (!activeId) {

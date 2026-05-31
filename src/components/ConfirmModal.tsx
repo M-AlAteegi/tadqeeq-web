@@ -3,6 +3,7 @@
 // dialog (delete chat, delete library chat, eventually delete document).
 
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 
 interface Props {
   open: boolean
@@ -37,7 +38,11 @@ export function ConfirmModal({
 
   if (!open) return null
 
-  return (
+  // Portal to <body> so we escape the sidebar's transform: translateZ(0)
+  // — that GPU optimisation creates a new containing block for any
+  // position: fixed descendant, which is why the modal was rendering
+  // inside the sidebar instead of centered with backdrop blur.
+  return createPortal(
     <div
       className="modal-overlay show"
       role="dialog"
@@ -79,6 +84,7 @@ export function ConfirmModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

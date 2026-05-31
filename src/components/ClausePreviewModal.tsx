@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { ClauseDetail } from '../lib/types'
 
 type Lang = 'en' | 'ar'
@@ -37,7 +38,9 @@ export function ClausePreviewModal({ clause, open, onClose, onInsert }: Props) {
   const title = lang === 'ar' && clause.title_ar ? clause.title_ar : clause.title_en
   const isArabic = lang === 'ar'
 
-  return (
+  // Same portal rationale as ConfirmModal — the clause overlay must
+  // escape the LibraryView wrapper so it can backdrop-blur the whole app.
+  return createPortal(
     <div
       className={open ? 'clause-overlay show' : 'clause-overlay'}
       role="dialog"
@@ -108,6 +111,7 @@ export function ClausePreviewModal({ clause, open, onClose, onInsert }: Props) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }

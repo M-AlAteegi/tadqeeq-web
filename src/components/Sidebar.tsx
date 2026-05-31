@@ -15,6 +15,7 @@ interface Props {
   activeChatId: string | null
   onChatSelect: (id: string | null) => void
   onNewChat: () => void
+  onSuggestion?: (question: string) => void
   refreshKey: number
   collapsed?: boolean
 }
@@ -25,6 +26,7 @@ export function Sidebar({
   activeChatId,
   onChatSelect,
   onNewChat,
+  onSuggestion,
   refreshKey,
   collapsed = false,
 }: Props) {
@@ -160,7 +162,7 @@ export function Sidebar({
           <div className="history-title" style={{ padding: '0 0 12px 0' }}>Try These</div>
           <div
             className="history-item ex"
-            onClick={() => onNewChat()}
+            onClick={() => onSuggestion?.('What are the licensing fees for finance companies?')}
             style={{ cursor: 'pointer' }}
           >
             <span>Licensing fees</span>
@@ -175,7 +177,7 @@ export function Sidebar({
           </div>
           <div
             className="history-item ex"
-            onClick={() => onNewChat()}
+            onClick={() => onSuggestion?.('What is a qualified investor?')}
             style={{ cursor: 'pointer' }}
           >
             <span>Qualified investor</span>

@@ -11,9 +11,18 @@ interface Props {
   onChatCreated: (id: string) => void
   onChatTouched: () => void
   stats?: CorpusStats
+  pendingPrompt?: string | null
+  onPromptConsumed?: () => void
 }
 
-export function ChatView({ chatId, onChatCreated, onChatTouched, stats }: Props) {
+export function ChatView({
+  chatId,
+  onChatCreated,
+  onChatTouched,
+  stats,
+  pendingPrompt,
+  onPromptConsumed,
+}: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
   const [streamingIndex, setStreamingIndex] = useState<number | null>(null)
@@ -137,6 +146,16 @@ export function ChatView({ chatId, onChatCreated, onChatTouched, stats }: Props)
   function handleStop() {
     abortRef.current?.abort()
   }
+
+  // Consume "Try These" suggestion when it lands. Wait for ChatView to be
+  // in an idle state (no streaming, no active chat) so we don't blow away
+  // an in-flight response.
+  useEffect(() => {
+    if (!pendingPrompt || isStreaming || chatId) return
+    handleSend(pendingPrompt)
+    onPromptConsumed?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingPrompt, isStreaming, chatId])
 
   if (!chatId && messages.length === 0 && !isStreaming) {
     return (
