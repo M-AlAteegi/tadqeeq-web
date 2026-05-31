@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Sidebar } from './components/Sidebar'
 import { Header } from './components/Header'
 import { ChatView } from './components/ChatView'
 import { LibraryView } from './components/LibraryView'
 import { AnalysisView } from './components/AnalysisView'
+import { useToast } from './components/Toast'
 import { api } from './lib/api'
-import type { CorpusStats, Mode } from './lib/types'
+import type { CorpusStats, DocumentMetadata, Mode } from './lib/types'
 import type { AnalysisSaveBundle } from './components/Header'
 
 export default function App() {
@@ -22,10 +23,13 @@ export default function App() {
   // Header can render Save Report in the same row as Export (v3.2 layout).
   // Null when no report is showing or analysis isn't the active mode.
   const [analysisSave, setAnalysisSave] = useState<AnalysisSaveBundle | null>(null)
-  // Chat composer's attach button sets this to true; AnalysisView consumes
-  // it once on mount and immediately opens its file picker. Cleared by
-  // the consumer so a subsequent mode switch back to chat doesn't re-fire.
-  const [analysisAutoPick, setAnalysisAutoPick] = useState(false)
+  // Doc uploaded via the chat composer's attach button. App owns this
+  // upload flow so the mode swap only fires AFTER a successful upload
+  // — if the user cancels the picker, nothing changes. AnalysisView
+  // consumes the doc on mount and clears the prop via onPreUploadConsumed.
+  const [chatAttachedDoc, setChatAttachedDoc] = useState<DocumentMetadata | null>(null)
+  const chatAttachInputRef = useRef<HTMLInputElement>(null)
+  const toast = useToast()
 
   // One-shot corpus stats fetch (powered by /health). The backend's RAG
   // init takes ~20s so the first call may return zeros; we don't poll
@@ -61,6 +65,23 @@ export default function App() {
     if (next === 'analysis') {
       setActiveChatId(null)
       setActiveLibraryChatId(null)
+    }
+  }
+
+  async function handleChatAttachFile(file: File) {
+    // Upload FIRST, swap mode only on success. If the user cancels the
+    // picker no change event fires, so this path doesn't run and chat
+    // mode stays put. Failure surfaces as a toast without changing mode
+    // — the user can retry without losing their place in chat.
+    try {
+      const meta = await api.uploadDocument(file)
+      setChatAttachedDoc(meta)
+      setMode('analysis')
+      toast.show(`Uploaded "${meta.filename}"`)
+    } catch (e) {
+      const raw = String((e as { message?: string })?.message ?? e)
+      const msg = raw.replace(/^error:\s*/i, '').trim() || 'Upload failed'
+      toast.show(`Upload failed — ${msg}`, 'info')
     }
   }
 
@@ -111,13 +132,10 @@ export default function App() {
             stats={stats}
             pendingPrompt={pendingChatPrompt}
             onPromptConsumed={() => setPendingChatPrompt(null)}
-            onAttach={() => {
-              // Composer attach → land the user in analysis mode and
-              // pop the picker. The flag survives the mode swap, then
-              // AnalysisView consumes it on mount.
-              setMode('analysis')
-              setAnalysisAutoPick(true)
-            }}
+            // Composer attach → trigger our hidden input. Picker opens
+            // in chat mode; mode swap only happens after a successful
+            // upload (handleChatAttachFile). Cancelling = no-op.
+            onAttach={() => chatAttachInputRef.current?.click()}
           />
         )}
         {mode === 'library' && (
@@ -130,11 +148,26 @@ export default function App() {
         {mode === 'analysis' && (
           <AnalysisView
             onSaveBundleChange={setAnalysisSave}
-            autoOpenPicker={analysisAutoPick}
-            onAutoPickConsumed={() => setAnalysisAutoPick(false)}
+            preUploadedDoc={chatAttachedDoc}
+            onPreUploadConsumed={() => setChatAttachedDoc(null)}
           />
         )}
       </main>
+      {/* Hidden file input owned by App so the chat composer's attach
+          button can pop the picker without first switching modes.
+          On change we upload via the regular API path; mode swap +
+          AnalysisView hand-off happen only on success. */}
+      <input
+        ref={chatAttachInputRef}
+        type="file"
+        accept=".pdf,.docx,.doc"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) handleChatAttachFile(f)
+          e.target.value = ''
+        }}
+      />
     </>
   )
 }

@@ -32,18 +32,17 @@ type Report = 'compliance' | 'brief' | null
 interface Props {
   // Lifted up so Header can render Save Report in v3.2 position.
   onSaveBundleChange?: (bundle: AnalysisSaveBundle | null) => void
-  // Set by App when the chat composer's attach button was clicked.
-  // AnalysisView pops its file picker on the next tick and clears
-  // the flag through onAutoPickConsumed so it doesn't re-fire on
-  // every render.
-  autoOpenPicker?: boolean
-  onAutoPickConsumed?: () => void
+  // Doc App already uploaded for us (chat composer attach flow). We
+  // consume it once on mount, then clear via onPreUploadConsumed so a
+  // future analysis-mode re-entry doesn't re-adopt a stale doc.
+  preUploadedDoc?: DocumentMetadata | null
+  onPreUploadConsumed?: () => void
 }
 
 export function AnalysisView({
   onSaveBundleChange,
-  autoOpenPicker,
-  onAutoPickConsumed,
+  preUploadedDoc,
+  onPreUploadConsumed,
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [doc, setDoc] = useState<DocumentMetadata | null>(null)
@@ -75,17 +74,18 @@ export function AnalysisView({
     fileInputRef.current?.click()
   }, [])
 
-  // Honor an attach-button click that originated in chat mode. The flag
-  // arrives via prop after App swapped modes; pop the picker on the
-  // next tick (file input has to be mounted first) and clear the flag.
+  // Adopt the doc App uploaded for us via the chat composer attach
+  // button. One-shot: set local state, clear the prop signal, reset
+  // any stale report state so the new doc starts clean.
   useEffect(() => {
-    if (!autoOpenPicker) return
-    const id = window.setTimeout(() => {
-      openFilePicker()
-      onAutoPickConsumed?.()
-    }, 0)
-    return () => window.clearTimeout(id)
-  }, [autoOpenPicker, openFilePicker, onAutoPickConsumed])
+    if (!preUploadedDoc) return
+    setDoc(preUploadedDoc)
+    setCompliance(null)
+    setBrief(null)
+    setReport(null)
+    setError(null)
+    onPreUploadConsumed?.()
+  }, [preUploadedDoc, onPreUploadConsumed])
 
   async function handleFile(file: File) {
     setError(null)
