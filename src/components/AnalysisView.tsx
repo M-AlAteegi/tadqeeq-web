@@ -140,14 +140,24 @@ export function AnalysisView() {
     }
   }
 
-  // Save menu for the brief report. Backend export endpoints live at
-  // /api/analysis/documents/{id}/brief/export/{md|docx|pdf}. Compliance
-  // export endpoints don't exist server-side yet — flagged separately.
+  // Save menus — backend export endpoints honor the user's date_format
+  // pick for both, and the compliance lang query-param overrides
+  // doc_language so saving an EN-locked AR-doc report comes out in EN.
+  const briefDF = settings?.brief_date_format ?? 'dual'
+  const complDF = settings?.date_format ?? 'dual'
+  const complLang = settings?.report_language ?? 'auto'
   const briefSaveUrls = doc
     ? {
-        pdf: `/api/analysis/documents/${doc.id}/brief/export/pdf`,
-        docx: `/api/analysis/documents/${doc.id}/brief/export/docx`,
-        md: `/api/analysis/documents/${doc.id}/brief/export/markdown`,
+        pdf: `/api/analysis/documents/${doc.id}/brief/export/pdf?date_format=${briefDF}`,
+        docx: `/api/analysis/documents/${doc.id}/brief/export/docx?date_format=${briefDF}`,
+        md: `/api/analysis/documents/${doc.id}/brief/export/markdown?date_format=${briefDF}`,
+      }
+    : null
+  const complianceSaveUrls = doc
+    ? {
+        pdf: `/api/analysis/documents/${doc.id}/compliance/export/pdf?date_format=${complDF}&lang=${complLang}`,
+        docx: `/api/analysis/documents/${doc.id}/compliance/export/docx?date_format=${complDF}&lang=${complLang}`,
+        md: `/api/analysis/documents/${doc.id}/compliance/export/markdown?date_format=${complDF}&lang=${complLang}`,
       }
     : null
 
@@ -184,16 +194,15 @@ export function AnalysisView() {
               result={compliance}
               reportLanguage={settings?.report_language ?? 'auto'}
             />
-            <div
-              style={{
-                textAlign: 'center',
-                marginTop: 16,
-                color: 'var(--text3)',
-                fontSize: 11,
-              }}
-            >
-              Compliance export endpoints aren't wired on the backend yet — coming next commit.
-            </div>
+            {complianceSaveUrls && (
+              <div style={{ textAlign: 'center', marginTop: 16 }}>
+                <SaveReportMenu
+                  urls={complianceSaveUrls}
+                  suggestedBaseName={`tadqeeq-compliance-${doc?.filename ?? 'document'}`}
+                  buttonLabel="Save Compliance"
+                />
+              </div>
+            )}
           </>
         ) : report === 'brief' && brief ? (
           <>
