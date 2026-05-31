@@ -1626,7 +1626,16 @@
         }
         [data-theme="light"] .attach-btn { background: rgba(0,0,0,0.05); color: var(--text); }
         [data-theme="light"] .attach-btn svg { stroke: var(--text); }
-        [data-theme="light"] .attach-btn svg[fill="currentColor"] { color: var(--text); }
+        /* Light-mode parent rule above re-asserts `stroke: var(--text)` on
+           every svg in .attach-btn. For fill-based icons we need to wipe
+           the stroke again at higher specificity than the same-theme
+           parent rule — otherwise the dark stroke paints over the fill
+           and the chunky outline returns in light mode only. */
+        [data-theme="light"] .attach-btn svg[fill="currentColor"] {
+            fill: currentColor;
+            stroke: none;
+            color: var(--text);
+        }
 
         /* Theme Toggle & Avatar Icons */
         .theme-toggle-sidebar {
