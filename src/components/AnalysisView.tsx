@@ -169,7 +169,10 @@ export function AnalysisView({ onSaveBundleChange }: Props) {
           md: `/api/analysis/documents/${doc.id}/compliance/export/markdown?date_format=${complDF}&lang=${complLang}`,
         },
         baseName: `tadqeeq-compliance-${doc.filename}`,
-        buttonLabel: 'Save Compliance',
+        // Label stays "Save Report" regardless of report kind — the URLs
+        // route to the right backend endpoint behind the scenes, so the
+        // button doesn't need to switch identity on the user.
+        buttonLabel: 'Save Report',
       })
     } else if (report === 'brief') {
       onSaveBundleChange({
@@ -179,7 +182,7 @@ export function AnalysisView({ onSaveBundleChange }: Props) {
           md: `/api/analysis/documents/${doc.id}/brief/export/markdown?date_format=${briefDF}`,
         },
         baseName: `tadqeeq-brief-${doc.filename}`,
-        buttonLabel: 'Save Brief',
+        buttonLabel: 'Save Report',
       })
     } else {
       onSaveBundleChange(null)

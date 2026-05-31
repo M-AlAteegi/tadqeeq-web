@@ -49,17 +49,13 @@ const LABELS: Record<ExportFormat, string> = {
   md: 'Markdown (.md)',
 }
 
-const ICON_SAVE = (
-  <svg viewBox="0 0 24 24" strokeWidth={2} fill="none" stroke="currentColor">
-    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-    <polyline points="17 21 17 13 7 13 7 21" />
-    <polyline points="7 3 7 8 15 8" />
-  </svg>
-)
-
+// Bootstrap download glyph — used for both Save Report (primary, analysis)
+// and Export (secondary, chat/library). Pairs with the Bootstrap upload
+// icon used everywhere a file enters the app.
 const ICON_DOWNLOAD = (
-  <svg viewBox="0 0 24 24" strokeWidth={2.5} fill="none" stroke="currentColor">
-    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5" />
+    <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z" />
   </svg>
 )
 
@@ -106,7 +102,7 @@ export function SaveReportMenu({
         className={primary ? 'header-btn primary' : 'header-btn'}
         onClick={() => setOpen((v) => !v)}
       >
-        {primary ? ICON_SAVE : ICON_DOWNLOAD}
+        {ICON_DOWNLOAD}
         {buttonLabel}
       </button>
       <div
