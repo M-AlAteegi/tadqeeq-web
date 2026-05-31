@@ -46,8 +46,11 @@ function buildLibraryUrls(id: string) {
   }
 }
 
+// .icon-sun / .icon-moon live in v3.css and paint yellow / blue with a
+// soft drop-shadow glow — same treatment used by the sidebar toggle so
+// both buttons read identically across the surface.
 const SUN_ICON = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+  <svg className="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="5" />
     <line x1="12" y1="1" x2="12" y2="3" />
     <line x1="12" y1="21" x2="12" y2="23" />
@@ -61,7 +64,7 @@ const SUN_ICON = (
 )
 
 const MOON_ICON = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+  <svg className="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
   </svg>
 )
@@ -97,7 +100,8 @@ export function Header({
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <button
           id="menuBtn"
-          className="menu-btn"
+          // .menu-btn.closed flips the icon 180° via v3.css transition.
+          className={sidebarCollapsed ? 'menu-btn closed' : 'menu-btn'}
           title="Toggle Sidebar"
           aria-label="Toggle sidebar navigation"
           onClick={onToggleSidebar}
@@ -153,20 +157,21 @@ export function Header({
             />
           </div>
         )}
-        <button
-          className={`header-btn primary ${collapseClass}`.trim()}
-          id="newChatBtnHeader"
-          onClick={onNewChat}
-          type="button"
-        >
-          <svg viewBox="0 0 24 24" strokeWidth={2}>
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          <span className="new-chat-label">
-            {mode === 'library' ? 'New Clause' : mode === 'analysis' ? 'New Document' : 'New Chat'}
-          </span>
-        </button>
+        {/* Analysis mode owns its own upload button (next to Remove in the
+            doc bar) — the header "+ New Document" was redundant and never
+            wired, so it's hidden entirely here. */}
+        {mode !== 'analysis' && (
+          <button
+            className={`header-btn primary ${collapseClass}`.trim()}
+            id="newChatBtnHeader"
+            onClick={onNewChat}
+            type="button"
+          >
+            <span className="new-chat-label">
+              {mode === 'library' ? 'New Clause' : 'New Chat'}
+            </span>
+          </button>
+        )}
       </div>
     </header>
   )

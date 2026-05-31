@@ -251,6 +251,7 @@ export function AnalysisView({ onSaveBundleChange }: Props) {
             fontSize: 10,
             color: 'var(--text3)',
             fontWeight: 600,
+            userSelect: 'none',
           }}
         >
           AI can make mistakes. Verify important information.

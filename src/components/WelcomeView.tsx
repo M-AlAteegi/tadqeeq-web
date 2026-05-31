@@ -16,7 +16,8 @@ export function WelcomeView({ mode, stats }: Props) {
         </div>
         <div className="welcome-title">TadqeeqAI</div>
         <div className="welcome-subtitle">
-          Your AI-powered regulatory assistant for SAMA and CMA compliance.
+          Your AI-powered regulatory assistant for SAMA and{' '}
+          <span style={{ whiteSpace: 'nowrap' }}>CMA compliance.</span>
         </div>
         <div className="welcome-subtitle" style={{ marginTop: 6 }}>
           Ask questions in English or Arabic to explore financial regulations.
