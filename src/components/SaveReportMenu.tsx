@@ -17,6 +17,27 @@ interface Props {
   buttonLabel?: string
   primary?: boolean
   align?: 'left' | 'right'
+  // When true, render a Both/Greg/Hijri pill row under the file types.
+  // Selection is appended to the URL at click time (date_format=...).
+  // Chat + library Exports use this; analysis Save Report bakes the
+  // setting into the URL upstream so it stays off there.
+  supportsDateFormat?: boolean
+}
+
+type DateFormat = 'dual' | 'gregorian' | 'hijri'
+
+const DATE_PILLS: Array<{ value: DateFormat; label: string }> = [
+  { value: 'dual', label: 'Both' },
+  { value: 'gregorian', label: 'Greg' },
+  { value: 'hijri', label: 'Hijri' },
+]
+
+function withDateFormat(url: string, df: DateFormat): string {
+  if (/[?&]date_format=/.test(url)) {
+    return url.replace(/([?&])date_format=[^&]*/, `$1date_format=${df}`)
+  }
+  const sep = url.includes('?') ? '&' : '?'
+  return `${url}${sep}date_format=${df}`
 }
 
 const ICON_PDF = (
@@ -65,9 +86,13 @@ export function SaveReportMenu({
   buttonLabel = 'Save Report',
   primary = true,
   align = 'right',
+  supportsDateFormat = false,
 }: Props) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState<ExportFormat | null>(null)
+  // Default mirrors the backend's own default so the menu shows the
+  // truthy current selection at first paint.
+  const [dateFormat, setDateFormat] = useState<DateFormat>('dual')
   const ref = useRef<HTMLDivElement>(null)
   const toast = useToast()
 
@@ -85,7 +110,8 @@ export function SaveReportMenu({
   async function handle(fmt: ExportFormat) {
     setBusy(fmt)
     try {
-      await downloadExport(urls[fmt], `${suggestedBaseName}.${fmt}`)
+      const target = supportsDateFormat ? withDateFormat(urls[fmt], dateFormat) : urls[fmt]
+      await downloadExport(target, `${suggestedBaseName}.${fmt}`)
       toast.show(`${fmt.toUpperCase()} saved`)
     } catch {
       toast.show(`Save failed (${fmt.toUpperCase()})`, 'info')
@@ -120,6 +146,30 @@ export function SaveReportMenu({
             {busy === fmt ? `Saving ${fmt.toUpperCase()}…` : LABELS[fmt]}
           </div>
         ))}
+        {supportsDateFormat && (
+          // Date-format pill row sits BELOW the file list — v3.2 chat
+          // Export pattern. Selection is applied to the URL at click
+          // time so the user can flip it without losing focus.
+          <>
+            <div className="dfmt-divider" />
+            <div className="dfmt-row">
+              <span className="dfmt-label">Date format</span>
+              <div className="dfmt-pill-row" role="radiogroup" aria-label="Date format">
+                {DATE_PILLS.map((p) => (
+                  <button
+                    key={p.value}
+                    type="button"
+                    className={dateFormat === p.value ? 'dfmt-btn active' : 'dfmt-btn'}
+                    onClick={() => setDateFormat(p.value)}
+                    aria-pressed={dateFormat === p.value}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

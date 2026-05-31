@@ -148,6 +148,11 @@ export function Header({
             suggestedBaseName={exportBaseName}
             buttonLabel="Export"
             primary={false}
+            // Chat + library Exports don't bake date_format into the
+            // URL upstream, so the dropdown owns the choice and
+            // appends it at click time. Analysis Save Report already
+            // has the user's setting baked in, so it skips the pill.
+            supportsDateFormat
           />
         )}
         {analysisSave && (
