@@ -146,12 +146,18 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
     }
   }, [])
 
-  const insertClauseAsPrimer = useCallback((c: ClauseDetail) => {
-    const body = c.body_en || c.body_ar || ''
-    const title = c.title_en || c.title_ar || 'clause'
-    const primer = `I'm reviewing the following ${title}. Please help me adapt or assess it:\n\n${body}\n\n[Your question here]`
+  const insertClauseAsPrimer = useCallback((c: ClauseDetail, lang: 'en' | 'ar' = 'en') => {
+    // Lang comes from the ClausePreviewModal's EN/AR toggle when invoked
+    // via the modal's "Insert to Chat" button. The drill view's "Ask"
+    // button doesn't pass a lang — defaults to EN, matching v3.2.
+    const useAr = lang === 'ar' && !!c.body_ar
+    const body = useAr ? c.body_ar! : (c.body_en || c.body_ar || '')
+    const title = useAr ? (c.title_ar || c.title_en || 'clause') : (c.title_en || c.title_ar || 'clause')
+    const primer = useAr
+      ? `أراجع البند التالي: ${title}. ساعدني في تعديله أو تقييمه:\n\n${body}\n\n[ضع سؤالك هنا]`
+      : `I'm reviewing the following ${title}. Please help me adapt or assess it:\n\n${body}\n\n[Your question here]`
     setComposerText(primer)
-    const placeholder = '[Your question here]'
+    const placeholder = useAr ? '[ضع سؤالك هنا]' : '[Your question here]'
     const idx = primer.lastIndexOf(placeholder)
     if (idx >= 0) {
       setComposerSelection({ start: idx, end: idx + placeholder.length })

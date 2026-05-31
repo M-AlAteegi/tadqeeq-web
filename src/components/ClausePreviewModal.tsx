@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
 import type { ClauseDetail } from '../lib/types'
 
+type Lang = 'en' | 'ar'
+
 interface Props {
   clause: ClauseDetail | null
   open: boolean
   onClose: () => void
-  onInsert: (clause: ClauseDetail) => void
+  // Lang carries the toggle the user picked inside the modal so Insert
+  // primes the composer in that language (matches the body the user just
+  // looked at — Insert-EN-after-toggling-to-AR was the bug).
+  onInsert: (clause: ClauseDetail, lang: Lang) => void
 }
-
-type Lang = 'en' | 'ar'
 
 export function ClausePreviewModal({ clause, open, onClose, onInsert }: Props) {
   const [lang, setLang] = useState<Lang>('en')
@@ -97,7 +100,7 @@ export function ClausePreviewModal({ clause, open, onClose, onInsert }: Props) {
               borderColor: 'var(--accent)',
             }}
             onClick={() => {
-              onInsert(clause)
+              onInsert(clause, lang)
               onClose()
             }}
           >
