@@ -15,6 +15,7 @@ import { LibraryComposer } from './LibraryComposer'
 import { ClausePreviewModal } from './ClausePreviewModal'
 import { Message } from './Message'
 import { useToast } from './Toast'
+import { ScrollToBottomButton } from './ScrollToBottomButton'
 
 type View = 'welcome' | 'drill' | 'focused'
 
@@ -407,6 +408,7 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
         onClose={() => setPreviewOpen(false)}
         onInsert={insertClauseAsPrimer}
       />
+      <ScrollToBottomButton targetId="libraryContent" />
     </div>
   )
 }

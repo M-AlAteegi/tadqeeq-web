@@ -16,6 +16,7 @@ import { AnalysisDocControls } from './AnalysisDocControls'
 import { AnalysisDropOverlay } from './AnalysisDropOverlay'
 import { AnalysisEmptyBar } from './AnalysisEmptyBar'
 import { AnalysisWelcome } from './AnalysisWelcome'
+import { ScrollToBottomButton } from './ScrollToBottomButton'
 import { useToast } from './Toast'
 import type { AnalysisSaveBundle } from './Header'
 import type {
@@ -244,6 +245,7 @@ export function AnalysisView({ onSaveBundleChange }: Props) {
           <AnalysisWelcome />
         )}
       </div>
+      <ScrollToBottomButton targetId="chat" />
       <div className="input-area">
         {doc ? (
           <AnalysisDocControls

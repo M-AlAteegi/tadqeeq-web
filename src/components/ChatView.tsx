@@ -5,6 +5,7 @@ import type { ChatMessage, CorpusStats, Source } from '../lib/types'
 import { MessageList } from './MessageList'
 import { Composer } from './Composer'
 import { WelcomeView } from './WelcomeView'
+import { ScrollToBottomButton } from './ScrollToBottomButton'
 
 interface Props {
   chatId: string | null
@@ -163,6 +164,7 @@ export function ChatView({
         <div className="chat" id="chat">
           <WelcomeView mode="chat" stats={stats} />
         </div>
+        <ScrollToBottomButton targetId="chat" />
         <Composer onSend={handleSend} />
       </>
     )
@@ -171,6 +173,7 @@ export function ChatView({
   return (
     <>
       <MessageList messages={messages} streamingIndex={streamingIndex} />
+      <ScrollToBottomButton targetId="chat" />
       <Composer
         onSend={handleSend}
         onStop={handleStop}

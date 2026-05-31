@@ -26,6 +26,7 @@ export function MessageList({ messages, streamingIndex }: Props) {
   return (
     <div
       className="chat"
+      id="chat"
       role="log"
       aria-live="polite"
       aria-label="Conversation"
