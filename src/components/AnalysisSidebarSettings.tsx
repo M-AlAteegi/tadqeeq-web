@@ -28,20 +28,45 @@ const DATE_FORMATS: { value: DateFormat; label: string }[] = [
   { value: 'hijri', label: 'Hijri' },
 ]
 
-// Bootstrap calendar4-week glyph. Inline before the Date Format label so
-// the row reads as a discrete "calendar" setting even at a glance.
+// Small inline icons leading each setting label. All sized 12x12 with a
+// consistent baseline tweak (verticalAlign -2px) so the label text and
+// the glyph share a baseline regardless of row.
+const ICON_STYLE = { marginRight: 6, verticalAlign: '-2px' as const }
+
+// Bootstrap calendar4-week — Date Format row.
 const CALENDAR_ICON = (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="12"
-    height="12"
-    fill="currentColor"
-    viewBox="0 0 16 16"
-    style={{ marginRight: 6, verticalAlign: '-2px' }}
-    aria-hidden="true"
-  >
+  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style={ICON_STYLE} aria-hidden="true">
     <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M2 2a1 1 0 0 0-1 1v1h14V3a1 1 0 0 0-1-1zm13 3H1v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1z" />
     <path d="M11 7.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-2 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5z" />
+  </svg>
+)
+
+// Bootstrap translate — Report Language rows (compliance + brief).
+const LANGUAGE_ICON = (
+  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style={ICON_STYLE} aria-hidden="true">
+    <path d="M4.545 6.714 4.11 8H3l1.862-5h1.284L8 8H6.833l-.435-1.286zm1.634-.736L5.5 3.956h-.049l-.679 2.022z" />
+    <path d="M0 2a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v3h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-3H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zm7.138 9.995q.289.451.63.846c-.748.575-1.673 1.001-2.768 1.292.178.217.451.635.555.867 1.125-.359 2.08-.844 2.886-1.494.777.665 1.739 1.165 2.93 1.472.133-.254.414-.673.629-.89-1.125-.253-2.057-.694-2.82-1.284.681-.747 1.222-1.651 1.621-2.757H14V8h-3v1.047h.765c-.318.844-.74 1.546-1.272 2.13a6 6 0 0 1-.415-.492 2 2 0 0 1-.94.31" />
+  </svg>
+)
+
+// Clipboard + magnifying glass — Audit Rigor row.
+const RIGOR_ICON = (
+  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={ICON_STYLE} aria-hidden="true">
+    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+    <line x1="9" y1="10" x2="11" y2="10" />
+    <line x1="9" y1="14" x2="11" y2="14" />
+    <circle cx="16" cy="14" r="3" />
+    <line x1="18.1" y1="16.1" x2="21" y2="19" />
+  </svg>
+)
+
+// Bootstrap shield-fill-check — Strictness row. Stand-in for the
+// Font Awesome shield-halved the user named; same authoritative read,
+// and we don't have FA loaded.
+const STRICTNESS_ICON = (
+  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16" style={ICON_STYLE} aria-hidden="true">
+    <path d="M8 0c-.69 0-1.843.265-2.928.56-1.11.3-2.229.655-2.887.87a1.54 1.54 0 0 0-1.044 1.262c-.596 4.477.787 7.795 2.465 9.99a11.8 11.8 0 0 0 2.517 2.453c.386.273.744.482 1.048.625.28.132.581.24.829.24s.548-.108.829-.24a7 7 0 0 0 1.048-.625 11.8 11.8 0 0 0 2.517-2.453c1.678-2.195 3.061-5.513 2.465-9.99a1.54 1.54 0 0 0-1.044-1.263 63 63 0 0 0-2.887-.87C9.843.266 8.69 0 8 0m2.146 5.146a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 7.793z" />
   </svg>
 )
 
@@ -78,7 +103,7 @@ export function AnalysisSidebarSettings() {
         </div>
         <div className="ana-setting">
           <label className="ana-setting-label" htmlFor="anaSettingRigor">
-            Audit Rigor
+            {RIGOR_ICON}Audit Rigor
           </label>
           <select
             id="anaSettingRigor"
@@ -92,7 +117,7 @@ export function AnalysisSidebarSettings() {
         </div>
         <div className="ana-setting">
           <label className="ana-setting-label" htmlFor="anaSettingStrictness">
-            Strictness
+            {STRICTNESS_ICON}Strictness
           </label>
           <select
             id="anaSettingStrictness"
@@ -106,7 +131,7 @@ export function AnalysisSidebarSettings() {
         </div>
         <div className="ana-setting">
           <label className="ana-setting-label" htmlFor="anaSettingReportLangCompliance">
-            Report Language
+            {LANGUAGE_ICON}Report Language
           </label>
           <select
             id="anaSettingReportLangCompliance"
@@ -152,7 +177,7 @@ export function AnalysisSidebarSettings() {
         </div>
         <div className="ana-setting">
           <label className="ana-setting-label" htmlFor="anaSettingReportLang">
-            Report Language
+            {LANGUAGE_ICON}Report Language
           </label>
           <select
             id="anaSettingReportLang"

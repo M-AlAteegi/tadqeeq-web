@@ -1109,28 +1109,38 @@
         /* Analysis header filter button + dropdown. Only mounted when
            sidebar is collapsed in analysis mode — gives access to the
            same Compliance + Brief setting cards without re-opening
-           the sidebar. */
+           the sidebar. Styled to sit between the bare menu-btn (left)
+           and the colored Save Report button (right) without competing. */
         .header-filter-btn {
-            width: 32px; height: 32px;
-            border-radius: 50%;
-            background: transparent;
+            width: 34px; height: 34px;
+            padding: 0;
+            border-radius: 10px;
+            background: var(--bg2);
             border: 1px solid var(--border);
             color: var(--text2);
             display: inline-flex; align-items: center; justify-content: center;
             cursor: pointer;
             -webkit-app-region: no-drag;
-            transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.2s ease;
+            transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
         }
+        .header-filter-btn svg { fill: currentColor; stroke: none; }
         .header-filter-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(45, 212, 191, 0.12);
             border-color: var(--accent);
             color: var(--accent);
-            transform: scale(1.05);
-        }
-        [data-theme="light"] .header-filter-btn:hover {
-            background: rgba(0, 212, 170, 0.1);
         }
         .header-filter-btn[aria-expanded="true"] {
+            background: rgba(45, 212, 191, 0.18);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        [data-theme="light"] .header-filter-btn {
+            background: rgba(0, 0, 0, 0.04);
+            border-color: rgba(0, 0, 0, 0.12);
+        }
+        [data-theme="light"] .header-filter-btn:hover,
+        [data-theme="light"] .header-filter-btn[aria-expanded="true"] {
+            background: rgba(0, 212, 170, 0.1);
             border-color: var(--accent);
             color: var(--accent);
         }
@@ -2278,9 +2288,40 @@
         .action-btn.check { background: rgba(45, 212, 191, 0.15); color: var(--accent); border: 1px solid rgba(45, 212, 191, 0.2); }
         .action-btn.check:hover { background: rgba(45, 212, 191, 0.25); transform: translateY(-1px); }
 
-        .action-btn.back { 
-            background: rgba(239, 68, 68, 0.1); 
-            color: #ef4444; 
+        /* Small icon-only swap-upload button. Lives between Brief and
+           Remove inside the loaded doc bar — neutral by default so it
+           doesn't compete with the colored Scan/Brief calls to action,
+           lights up to the accent on hover so the affordance reads. */
+        .action-btn.upload-swap {
+            background: var(--bg2);
+            color: var(--text2);
+            border: 1px solid var(--border);
+            padding: 8px 10px;
+        }
+        .action-btn.upload-swap svg { fill: currentColor; stroke: none; width: 16px; height: 16px; }
+        .action-btn.upload-swap:hover {
+            background: rgba(45, 212, 191, 0.12);
+            color: var(--accent);
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+        .action-btn.upload-swap:disabled {
+            opacity: 0.5; cursor: not-allowed;
+        }
+        [data-theme="light"] .action-btn.upload-swap {
+            background: rgba(0, 0, 0, 0.04);
+            color: var(--text2);
+            border-color: rgba(0, 0, 0, 0.12);
+        }
+        [data-theme="light"] .action-btn.upload-swap:hover {
+            background: rgba(0, 212, 170, 0.1);
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .action-btn.back {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
             border: 1px solid rgba(239, 68, 68, 0.2); 
             padding: 8px 16px; 
         }
