@@ -6,8 +6,18 @@ interface Props {
   onScan: () => void
   onBrief: () => void
   onRemove: () => void
+  // Same picker callback the empty bar uses — lets the user swap the
+  // current document without having to first hit Remove.
+  onUpload?: () => void
   isRunning?: 'compliance' | 'brief' | null
 }
+
+const UPLOAD_ICON_SMALL = (
+  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+    <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5" />
+    <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708z" />
+  </svg>
+)
 
 const FILE_ICON = (
   <svg viewBox="0 0 24 24">
@@ -32,7 +42,7 @@ const BRIEF_ICON = (
   </svg>
 )
 
-export function AnalysisDocControls({ filename, onScan, onBrief, onRemove, isRunning }: Props) {
+export function AnalysisDocControls({ filename, onScan, onBrief, onRemove, onUpload, isRunning }: Props) {
   return (
     <div id="docControls" className="doc-controls">
       <div className="doc-info">
@@ -85,6 +95,22 @@ export function AnalysisDocControls({ filename, onScan, onBrief, onRemove, isRun
           {isRunning === 'brief' ? 'Generating…' : 'Executive Brief'}
         </button>
         <div style={{ width: 1, height: 24, background: 'var(--border)', margin: '0 8px' }} />
+        {onUpload && (
+          // Icon-only secondary action — lets the user swap to a fresh
+          // file without going through Remove. Same picker callback the
+          // empty bar uses, so dropping a new file feels identical.
+          <button
+            type="button"
+            className="action-btn upload-swap"
+            onClick={onUpload}
+            disabled={!!isRunning}
+            title="Upload file"
+            aria-label="Upload a different file"
+            style={{ padding: '8px 10px' }}
+          >
+            {UPLOAD_ICON_SMALL}
+          </button>
+        )}
         <button type="button" className="action-btn back" onClick={onRemove} disabled={!!isRunning}>
           Remove
         </button>

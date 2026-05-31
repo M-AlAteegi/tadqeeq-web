@@ -28,6 +28,23 @@ const DATE_FORMATS: { value: DateFormat; label: string }[] = [
   { value: 'hijri', label: 'Hijri' },
 ]
 
+// Bootstrap calendar4-week glyph. Inline before the Date Format label so
+// the row reads as a discrete "calendar" setting even at a glance.
+const CALENDAR_ICON = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="12"
+    height="12"
+    fill="currentColor"
+    viewBox="0 0 16 16"
+    style={{ marginRight: 6, verticalAlign: '-2px' }}
+    aria-hidden="true"
+  >
+    <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5M2 2a1 1 0 0 0-1 1v1h14V3a1 1 0 0 0-1-1zm13 3H1v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1z" />
+    <path d="M11 7.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-2 3a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm-3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5z" />
+  </svg>
+)
+
 export function AnalysisSidebarSettings() {
   const [settings, setSettings] = useState<UserSettings | null>(null)
 
@@ -104,7 +121,7 @@ export function AnalysisSidebarSettings() {
           </select>
         </div>
         <div className="ana-setting">
-          <span className="ana-setting-label">Date Format</span>
+          <span className="ana-setting-label">{CALENDAR_ICON}Date Format</span>
           <div
             className="ana-setting-pills"
             role="radiogroup"
@@ -150,7 +167,7 @@ export function AnalysisSidebarSettings() {
           </select>
         </div>
         <div className="ana-setting">
-          <span className="ana-setting-label">Date Format</span>
+          <span className="ana-setting-label">{CALENDAR_ICON}Date Format</span>
           <div
             className="ana-setting-pills"
             role="radiogroup"

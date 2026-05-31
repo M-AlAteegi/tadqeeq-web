@@ -409,7 +409,18 @@
             border-radius: 6px; cursor: pointer; font-family: inherit;
             transition: background 0.15s ease, color 0.15s ease;
         }
-        .ana-setting-pill:hover:not(.active) { color: var(--text); }
+        /* Hover state mirrors the .mode-pill row — the box lights up
+           gray-on-track, not just a text color shift, so the affordance
+           reads at a glance. The rgba layer sits ON TOP of the parent
+           bg3 track, so a separate light-mode override is needed for
+           legibility on the bright track. */
+        .ana-setting-pill:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text);
+        }
+        [data-theme="light"] .ana-setting-pill:hover:not(.active) {
+            background: rgba(0, 0, 0, 0.06);
+        }
         .ana-setting-pill.active {
             background: var(--card-accent); color: white;
             box-shadow: 0 1px 3px color-mix(in srgb, var(--card-accent) 30%, transparent);
@@ -1093,6 +1104,53 @@
                .brief-wrapper fixes it for both reports symmetrically. */
             position: relative;
             z-index: 50;
+        }
+
+        /* Analysis header filter button + dropdown. Only mounted when
+           sidebar is collapsed in analysis mode — gives access to the
+           same Compliance + Brief setting cards without re-opening
+           the sidebar. */
+        .header-filter-btn {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text2);
+            display: inline-flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            -webkit-app-region: no-drag;
+            transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.2s ease;
+        }
+        .header-filter-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: scale(1.05);
+        }
+        [data-theme="light"] .header-filter-btn:hover {
+            background: rgba(0, 212, 170, 0.1);
+        }
+        .header-filter-btn[aria-expanded="true"] {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        .header-filter-menu {
+            position: absolute;
+            top: 100%; right: 0; margin-top: 8px;
+            width: 320px;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+            background: var(--dropdown-bg);
+            backdrop-filter: blur(20px);
+            border: var(--glass-border);
+            border-radius: 16px;
+            padding: 14px;
+            box-shadow: var(--glass-shadow);
+            /* Sit above the report card and the analysis save dropdown
+               (z:50). The filter dropdown is wider and the user opens it
+               with intent, so it wins both stacking races. */
+            z-index: 60;
+            display: flex; flex-direction: column; gap: 14px;
         }
         #analysisSaveWrap[style*="display: inline-block"],
         #analysisSaveWrap[style*="display: block"] {

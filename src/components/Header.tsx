@@ -1,5 +1,6 @@
 import type { Mode } from '../lib/types'
 import { SaveReportMenu, type ExportFormat } from './SaveReportMenu'
+import { AnalysisHeaderFilterButton } from './AnalysisHeaderFilterButton'
 import { useTheme } from '../hooks/useTheme'
 
 export interface AnalysisSaveBundle {
@@ -138,6 +139,9 @@ export function Header({
           {theme === 'dark' ? SUN_ICON : MOON_ICON}
         </button>
         <div id="headerDivider" className={collapseClass}></div>
+        {/* Analysis settings dropdown — only when the sidebar is hidden,
+            otherwise the same cards are visible in the sidebar already. */}
+        {mode === 'analysis' && sidebarCollapsed && <AnalysisHeaderFilterButton />}
         {exportUrls && (
           <SaveReportMenu
             urls={exportUrls}

@@ -242,6 +242,7 @@ export function AnalysisView({ onSaveBundleChange }: Props) {
             onScan={handleScan}
             onBrief={handleBrief}
             onRemove={handleRemove}
+            onUpload={openFilePicker}
             isRunning={isRunning}
           />
         ) : (
