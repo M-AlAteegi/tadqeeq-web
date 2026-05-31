@@ -4,6 +4,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { downloadExport } from '../lib/api'
+import { useToast } from './Toast'
 
 export type ExportFormat = 'pdf' | 'docx' | 'md'
 
@@ -72,6 +73,7 @@ export function SaveReportMenu({
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState<ExportFormat | null>(null)
   const ref = useRef<HTMLDivElement>(null)
+  const toast = useToast()
 
   useEffect(() => {
     if (!open) return
@@ -88,9 +90,9 @@ export function SaveReportMenu({
     setBusy(fmt)
     try {
       await downloadExport(urls[fmt], `${suggestedBaseName}.${fmt}`)
+      toast.show(`${fmt.toUpperCase()} saved`)
     } catch {
-      // surface a minimal alert; full toast lands in #101
-      alert(`Save failed (${fmt.toUpperCase()})`)
+      toast.show(`Save failed (${fmt.toUpperCase()})`, 'info')
     } finally {
       setBusy(null)
       setOpen(false)

@@ -4,6 +4,8 @@ import { ModePill } from './ModePill'
 import { ChatList } from './ChatList'
 import { LibraryChatList } from './LibraryChatList'
 import { AnalysisSidebarSettings } from './AnalysisSidebarSettings'
+import { ConfirmModal } from './ConfirmModal'
+import { useToast } from './Toast'
 import { useTheme } from '../hooks/useTheme'
 import { api } from '../lib/api'
 
@@ -29,6 +31,10 @@ export function Sidebar({
   const [theme, setTheme] = useTheme()
   const [chats, setChats] = useState<ChatSummary[]>([])
   const [libChats, setLibChats] = useState<LibraryChatSummary[]>([])
+  // Delete request from ChatList / LibraryChatList opens a ConfirmModal —
+  // native confirm() looks out of place against the v3.2 glass aesthetic.
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; preview: string } | null>(null)
+  const toast = useToast()
 
   const loadChats = useCallback(async () => {
     if (mode === 'chat') {
@@ -52,17 +58,28 @@ export function Sidebar({
     loadChats()
   }, [loadChats, refreshKey])
 
-  async function handleDelete(id: string) {
+  function requestDelete(id: string) {
+    const list = mode === 'library' ? libChats : chats
+    const found = list.find((c) => c.id === id)
+    setPendingDelete({ id, preview: found?.preview ?? 'this chat' })
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete) return
+    const id = pendingDelete.id
+    const isLibrary = mode === 'library'
+    setPendingDelete(null)
     try {
-      if (mode === 'library') {
+      if (isLibrary) {
         await api.deleteLibraryChat(id)
       } else {
         await api.deleteChat(id)
       }
       if (activeChatId === id) onChatSelect(null)
       await loadChats()
+      toast.show(isLibrary ? 'Clause chat deleted' : 'Chat deleted')
     } catch {
-      /* sidebar will look stale until next refresh */
+      toast.show('Delete failed', 'info')
     }
   }
 
@@ -115,14 +132,14 @@ export function Sidebar({
               chats={chats}
               activeId={activeChatId}
               onSelect={onChatSelect}
-              onDelete={handleDelete}
+              onDelete={requestDelete}
             />
           ) : (
             <LibraryChatList
               chats={libChats}
               activeId={activeChatId}
               onSelect={onChatSelect}
-              onDelete={handleDelete}
+              onDelete={requestDelete}
             />
           )}
         </div>
@@ -218,6 +235,17 @@ export function Sidebar({
           </div>
         </div>
       </div>
+      <ConfirmModal
+        open={!!pendingDelete}
+        title={mode === 'library' ? 'Delete Clause Chat' : 'Delete Chat'}
+        message={
+          pendingDelete
+            ? `Are you sure you want to delete "${pendingDelete.preview}"? This action is permanent and cannot be undone.`
+            : ''
+        }
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </aside>
   )
 }

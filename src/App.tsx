@@ -78,6 +78,7 @@ export default function App() {
       <main className="main" style={{ position: 'relative' }}>
         <Header
           mode={mode}
+          activeChatId={activeIdForMode}
           onNewChat={handleNewChat}
           onToggleSidebar={() => setSidebarCollapsed((v) => !v)}
         />

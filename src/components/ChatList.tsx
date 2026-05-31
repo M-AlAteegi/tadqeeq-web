@@ -53,7 +53,7 @@ export function ChatList({ chats, activeId, onSelect, onDelete }: Props) {
                 className="history-item-menu"
                 onClick={(e) => {
                   e.stopPropagation()
-                  if (confirm(`Delete chat "${c.preview}"?`)) onDelete(c.id)
+                  onDelete(c.id)
                 }}
                 role="button"
                 aria-label="Delete chat"

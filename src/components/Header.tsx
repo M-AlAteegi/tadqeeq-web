@@ -1,7 +1,9 @@
 import type { Mode } from '../lib/types'
+import { SaveReportMenu } from './SaveReportMenu'
 
 interface Props {
   mode: Mode
+  activeChatId: string | null
   onNewChat: () => void
   onToggleSidebar?: () => void
 }
@@ -12,8 +14,39 @@ const MODE_LABEL: Record<Mode, string> = {
   analysis: 'Analysis',
 }
 
-export function Header({ mode, onNewChat, onToggleSidebar }: Props) {
+function buildChatUrls(id: string) {
+  return {
+    pdf: `/api/chats/${id}/export/pdf`,
+    docx: `/api/chats/${id}/export/docx`,
+    md: `/api/chats/${id}/export/markdown`,
+  }
+}
+
+function buildLibraryUrls(id: string) {
+  return {
+    pdf: `/api/library/chats/${id}/export/pdf`,
+    docx: `/api/library/chats/${id}/export/docx`,
+    md: `/api/library/chats/${id}/export/markdown`,
+  }
+}
+
+export function Header({ mode, activeChatId, onNewChat, onToggleSidebar }: Props) {
   const badgeClass = `header-title-badge mode-${mode}`
+  // Show the export menu only when there's an active conversation in chat
+  // or library mode. Analysis save lives in the main panel (next to the
+  // compliance / brief card) since each report has its own URL bundle.
+  const showExport = activeChatId && (mode === 'chat' || mode === 'library')
+  const exportUrls = showExport
+    ? mode === 'chat'
+      ? buildChatUrls(activeChatId)
+      : buildLibraryUrls(activeChatId)
+    : null
+  const exportBaseName = showExport
+    ? mode === 'chat'
+      ? `tadqeeq-chat-${activeChatId}`
+      : `tadqeeq-library-${activeChatId}`
+    : ''
+
   return (
     <header className="header">
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -45,6 +78,14 @@ export function Header({ mode, onNewChat, onToggleSidebar }: Props) {
         </span>
       </div>
       <div className="header-actions">
+        {exportUrls && (
+          <SaveReportMenu
+            urls={exportUrls}
+            suggestedBaseName={exportBaseName}
+            buttonLabel="Export"
+            primary={false}
+          />
+        )}
         <button
           className="header-btn primary"
           id="newChatBtnHeader"
