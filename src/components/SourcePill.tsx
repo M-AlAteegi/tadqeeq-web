@@ -27,14 +27,14 @@ const STUCK_PAIRS: Array<[RegExp, string]> = [
 function prettifyDocName(raw: string): string {
   if (!raw) return ''
   let s = raw.replace(/\.(pdf|docx?|md|txt)$/i, '')
-  s = s.replace(/[_\-\s]+(ar|en)$/i, '')
+  s = s.replace(/[_\s-]+(ar|en)$/i, '')
   // Repair known stuck filler clusters BEFORE camel split so the
   // following pass treats them as proper word boundaries.
   for (const [pat, repl] of STUCK_PAIRS) s = s.replace(pat, repl)
   // Camel-case split — insert space at lower→upper and acronym→word
   // transitions so "FinanceCompanies" → "Finance Companies".
   s = s.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
-  s = s.replace(/[_\-]+/g, ' ').replace(/\s+/g, ' ').trim()
+  s = s.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim()
   return s
 }
 

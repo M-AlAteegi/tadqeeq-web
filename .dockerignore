@@ -1,0 +1,22 @@
+# Build output + deps — we install / build fresh inside the container.
+node_modules
+dist
+
+# Source control + editor / CI noise
+.git
+.gitignore
+.github
+.vscode
+.idea
+
+# Local-only files
+.env
+.env.*
+
+# Test + log clutter
+*.log
+*.tsbuildinfo
+
+# Docker meta — never needs to land inside the image
+Dockerfile
+.dockerignore

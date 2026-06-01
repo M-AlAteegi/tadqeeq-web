@@ -1,0 +1,80 @@
+# nginx server for the tadqeeq-web React bundle.
+#
+# This file is processed by the official nginx image's entrypoint
+# (envsubst on /etc/nginx/templates/*.template) before nginx starts,
+# so ${BACKEND_URL} is substituted from the container environment.
+# Default BACKEND_URL targets the conventional docker-compose service
+# name so a single-host stack works out of the box.
+
+server {
+    listen 80;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Gzip text assets — meaningful on the React bundle (~400 KB raw).
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types
+        text/plain
+        text/css
+        application/javascript
+        application/json
+        image/svg+xml
+        font/woff
+        font/woff2;
+
+    # Vite filenames carry a content hash, so the asset is safe to cache
+    # forever. The HTML below is excluded from this and always re-validated
+    # so a deploy of new hashes lands on the next page load.
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+
+    # Liveness probe for the docker HEALTHCHECK. Cheap, no-side-effects,
+    # doesn't need to reach the backend.
+    location = /_nginx_health {
+        access_log off;
+        return 200 "ok";
+        add_header Content-Type text/plain;
+    }
+
+    # API + health proxy → backend. Both endpoints are called from
+    # window code as same-origin /api/* and /health, matching the
+    # vite dev-server proxy so the bundle doesn't need an env-baked
+    # backend URL.
+    location /api/ {
+        proxy_pass ${BACKEND_URL};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # SSE streaming endpoints (chat / library query/stream) need
+        # buffering disabled so tokens flush to the browser as they
+        # arrive instead of pooling until the response closes. Default
+        # nginx buffering would break the streaming UX entirely.
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+    }
+
+    location = /health {
+        proxy_pass ${BACKEND_URL}/health;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_read_timeout 10s;
+    }
+
+    # SPA fallback — any unknown path returns index.html so React
+    # owns client-side routing. Must be LAST since it's the most
+    # permissive match.
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

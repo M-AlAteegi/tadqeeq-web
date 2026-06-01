@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: eslint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install deps
+        run: npm ci
+      - name: ESLint
+        run: npm run lint
+
+  build:
+    name: tsc + vite build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Install deps
+        run: npm ci
+      # `npm run build` runs `tsc -b && vite build`, so this job catches
+      # both type errors and bundler failures in one pass.
+      - name: Build
+        run: npm run build
+
+  docker:
+    name: docker build
+    runs-on: ubuntu-latest
+    # Mirrors the backend CI: build the production image but don't push
+    # anywhere yet. Validates that the multi-stage Dockerfile + nginx
+    # config still produce a working image on every commit.
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/setup-buildx-action@v3
+      - name: Build image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: tadqeeq-web:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
