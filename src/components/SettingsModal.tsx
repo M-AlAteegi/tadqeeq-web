@@ -147,7 +147,7 @@ export function SettingsModal({ open, onClose }: Props) {
             }}
           >
             {KEY_ICON}
-            <span>API Key</span>
+            <span>Backend Access Key</span>
           </div>
 
           <div style={{ position: 'relative' }}>
@@ -156,10 +156,10 @@ export function SettingsModal({ open, onClose }: Props) {
               type={reveal ? 'text' : 'password'}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              placeholder="Paste your backend API key"
+              placeholder="Paste the backend's access key"
               autoComplete="off"
               spellCheck={false}
-              aria-label="API key"
+              aria-label="Backend access key"
               style={{
                 width: '100%',
                 padding: '11px 44px 11px 14px',
@@ -208,14 +208,22 @@ export function SettingsModal({ open, onClose }: Props) {
               marginBottom: 0,
             }}
           >
-            Required when the backend is started with an{' '}
+            The shared secret your backend was started with under the{' '}
             <code style={{ background: 'var(--bg3)', padding: '1px 5px', borderRadius: 4 }}>
               API_KEY
             </code>{' '}
-            environment variable set (typical for a public deploy). Leave empty for
-            local development where the backend runs unauthenticated. The key is
-            stored in this browser&apos;s localStorage and never sent anywhere
-            except as a Bearer token to your backend.
+            environment variable — used to gate the backend from random
+            visitors (typical for a public deploy). Leave empty for local
+            development where the backend runs unauthenticated. Stored in
+            this browser&apos;s localStorage and sent only as a Bearer token
+            to your backend.
+            <br />
+            <strong style={{ color: 'var(--text2)' }}>Not</strong> your Anthropic /
+            Claude key — that one lives in the backend&apos;s{' '}
+            <code style={{ background: 'var(--bg3)', padding: '1px 5px', borderRadius: 4 }}>
+              CLAUDE_API_KEY
+            </code>{' '}
+            env var and never touches the browser.
           </p>
         </div>
 
