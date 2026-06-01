@@ -2,7 +2,7 @@
 // Provides a global `toast()` helper via context — components fire it
 // (success / info) and the provider manages the timed slide-in/out.
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 
 type Variant = 'success' | 'info'
@@ -48,8 +48,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     if (timerRef.current) window.clearTimeout(timerRef.current)
   }, [])
 
+  // Memoize so consumers get a stable reference — without this every
+  // ToastProvider render would hand out a fresh { show } object and
+  // any useEffect with `toast` in its deps would re-fire on every
+  // unrelated parent render.
+  const value = useMemo(() => ({ show }), [show])
+
   return (
-    <ToastContext.Provider value={{ show }}>
+    <ToastContext.Provider value={value}>
       {children}
       <div
         className={toast ? 'toast-notification show' : 'toast-notification'}

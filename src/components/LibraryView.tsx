@@ -45,9 +45,12 @@ interface Props {
   chatId: string | null
   onChatCreated: (id: string) => void
   onChatTouched: () => void
+  // Active library chat 404'd on load — usually deleted from another
+  // tab. App clears the id so the welcome view takes over.
+  onChatGone?: () => void
 }
 
-export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
+export function LibraryView({ chatId, onChatCreated, onChatTouched, onChatGone }: Props) {
   const [index, setIndex] = useState<LibraryIndex | null>(null)
   const [view, setView] = useState<View>('welcome')
   const [currentCategoryId, setCurrentCategoryId] = useState<string | null>(null)
@@ -136,13 +139,18 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
           setView('welcome')
         }
       })
-      .catch(() => {
-        if (!cancelled) setMessages([])
+      .catch((e) => {
+        if (cancelled) return
+        setMessages([])
+        if (e instanceof ApiError && e.status === 404) {
+          toast.show('Clause chat no longer exists', 'info')
+          onChatGone?.()
+        }
       })
     return () => {
       cancelled = true
     }
-  }, [chatId, index])
+  }, [chatId, index, onChatGone, toast])
 
   // Auto-scroll the library content area to bottom when new messages land,
   // unless the user has scrolled up.
@@ -323,6 +331,17 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
         } else if (event.type === 'error') {
           throw new Error(String(event.message ?? 'stream error'))
         }
+      }
+      // Stream finished cleanly but no tokens arrived — surface a
+      // retryable error rather than leaving the user with an empty
+      // bubble that looks like a UI bug.
+      if (!acc.trim()) {
+        setMessages((prev) => {
+          const copy = [...prev]
+          const last = copy[copy.length - 1]
+          copy[copy.length - 1] = { ...last, error: 'No response generated. Try rephrasing the question.' }
+          return copy
+        })
       }
     } catch (err) {
       if ((err as { name?: string })?.name !== 'AbortError') {

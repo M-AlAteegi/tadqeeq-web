@@ -22,6 +22,11 @@ interface Props {
   // Composer attach-button click — App handles the mode swap + picker
   // open; ChatView just forwards the intent.
   onAttach?: () => void
+  // Called when the active chat 404s on load — typically because it
+  // was deleted in another tab. App clears the active id so we drop
+  // back to the welcome view instead of staring at an empty messages
+  // list with a dangling chatId in state.
+  onChatGone?: () => void
 }
 
 export function ChatView({
@@ -33,6 +38,7 @@ export function ChatView({
   pendingPrompt,
   onPromptConsumed,
   onAttach,
+  onChatGone,
 }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
@@ -65,13 +71,22 @@ export function ChatView({
       .then((c) => {
         if (!cancelled) setMessages(c.messages ?? [])
       })
-      .catch(() => {
-        if (!cancelled) setMessages([])
+      .catch((e) => {
+        if (cancelled) return
+        setMessages([])
+        // 404 = the chat record is gone (deleted from another tab, or
+        // wiped on a backend redeploy without a persistent volume).
+        // Drop the dangling id so the welcome view takes over instead
+        // of leaving the user with an empty chat surface.
+        if (e instanceof ApiError && e.status === 404) {
+          toast.show('Chat no longer exists', 'info')
+          onChatGone?.()
+        }
       })
     return () => {
       cancelled = true
     }
-  }, [chatId])
+  }, [chatId, onChatGone, toast])
 
   async function handleSend(text: string) {
     // Guard against double-fire — rapid Enter / click between submit
@@ -137,6 +152,18 @@ export function ChatView({
         } else if (event.type === 'error') {
           throw new Error(String(event.message ?? 'stream error'))
         }
+      }
+      // Stream completed cleanly but produced no content — happens if
+      // the provider returns an empty result or hits an empty-response
+      // safety filter. Surface as a retryable error instead of leaving
+      // the user with a blank bubble.
+      if (!acc.trim()) {
+        setMessages((prev) => {
+          const copy = [...prev]
+          const last = copy[copy.length - 1]
+          copy[copy.length - 1] = { ...last, error: 'No response generated. Try rephrasing the question.' }
+          return copy
+        })
       }
     } catch (err) {
       if ((err as { name?: string })?.name !== 'AbortError') {

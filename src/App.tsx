@@ -121,6 +121,10 @@ export default function App() {
             // in chat mode; mode swap only happens after a successful
             // upload (handleChatAttachFile). Cancelling = no-op.
             onAttach={() => chatAttachInputRef.current?.click()}
+            onChatGone={() => {
+              setActiveChatId(null)
+              setSidebarRefresh((k) => k + 1)
+            }}
           />
         )}
         {mode === 'library' && (
@@ -128,6 +132,10 @@ export default function App() {
             chatId={activeLibraryChatId}
             onChatCreated={setActiveLibraryChatId}
             onChatTouched={() => setSidebarRefresh((k) => k + 1)}
+            onChatGone={() => {
+              setActiveLibraryChatId(null)
+              setSidebarRefresh((k) => k + 1)
+            }}
           />
         )}
         {mode === 'analysis' && (
