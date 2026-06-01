@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { api } from '../lib/api'
+import { ApiError, api, humanizeError } from '../lib/api'
 import { streamPOST } from '../lib/sse'
 import type {
   ChatMessage,
@@ -238,8 +238,10 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
     [insertClauseAsPrimer],
   )
 
-  async function handleSend() {
-    const text = composerText.trim()
+  // textOverride is set on retry so the prompt comes from the failed
+  // bubble's user pair instead of the (possibly empty) composer.
+  async function handleSend(textOverride?: string) {
+    const text = (textOverride ?? composerText).trim()
     if (!text) return
 
     // v3.2 rule: if the user inserted a clause primer but didn't fill in
@@ -274,7 +276,10 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
       return next
     })
     setIsStreaming(true)
-    setComposerText('')
+    // Only clear the composer when the send was driven by the composer
+    // itself — a retry shouldn't wipe whatever the user is currently
+    // typing into the next message.
+    if (textOverride === undefined) setComposerText('')
 
     const ctrl = new AbortController()
     abortRef.current = ctrl
@@ -318,14 +323,14 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
       }
     } catch (err) {
       if ((err as { name?: string })?.name !== 'AbortError') {
-        const msg = String(err)
+        const friendly = humanizeError(err)
+        if (err instanceof ApiError && err.status === 429) {
+          toast.show(friendly, 'info')
+        }
         setMessages((prev) => {
           const copy = [...prev]
           const last = copy[copy.length - 1]
-          copy[copy.length - 1] = {
-            ...last,
-            content: (last.content || '') + `\n\n_Error: ${msg}_`,
-          }
+          copy[copy.length - 1] = { ...last, error: friendly }
           return copy
         })
       }
@@ -339,6 +344,19 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
 
   function handleStop() {
     abortRef.current?.abort()
+  }
+
+  // Retry the prompt that produced a failed assistant message. Mirrors
+  // ChatView's handler — slice off the failed user/assistant pair, then
+  // re-issue the original text via handleSend's override parameter.
+  function handleRetry(assistantIndex: number) {
+    if (isStreaming) return
+    const userIdx = assistantIndex - 1
+    const userMsg = messages[userIdx]
+    if (!userMsg || userMsg.role !== 'user') return
+    const prompt = userMsg.content
+    setMessages((prev) => prev.slice(0, userIdx))
+    handleSend(prompt)
   }
 
   function handleScroll(e: React.UIEvent<HTMLDivElement>) {
@@ -386,7 +404,12 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
         {messages.length > 0 && (
           <div id="libMessages" style={{ maxWidth: 880, margin: '0 auto', padding: '0 32px 24px' }}>
             {messages.map((m, i) => (
-              <Message key={i} message={m} isStreaming={i === streamingIndex} />
+              <Message
+                key={i}
+                message={m}
+                isStreaming={i === streamingIndex}
+                onRetry={m.error ? () => handleRetry(i) : undefined}
+              />
             ))}
           </div>
         )}

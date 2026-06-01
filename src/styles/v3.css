@@ -1163,6 +1163,83 @@
             display: flex; flex-direction: column; gap: 14px;
         }
 
+        /* Inline error card inside an assistant bubble. Shown when the
+           SSE stream dies, the request 401s/429s, or anything else
+           breaks. Distinct from the toast so the recovery affordance
+           sits next to the partial content that prompted it. */
+        .msg-error {
+            margin-top: 14px;
+            padding: 12px 14px;
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 12px;
+            display: flex; align-items: center; gap: 12px;
+            font-size: 13px;
+            color: #fca5a5;
+        }
+        [data-theme="light"] .msg-error {
+            background: rgba(239, 68, 68, 0.06);
+            color: #b91c1c;
+        }
+        .msg-error-text { flex: 1; line-height: 1.45; }
+        .msg-error-retry {
+            padding: 6px 14px;
+            font-size: 12px; font-weight: 700;
+            background: rgba(239, 68, 68, 0.18);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.15s ease, transform 0.15s ease;
+        }
+        .msg-error-retry:hover {
+            background: rgba(239, 68, 68, 0.28);
+            transform: translateY(-1px);
+        }
+        [data-theme="light"] .msg-error-retry {
+            background: rgba(239, 68, 68, 0.12);
+            color: #b91c1c;
+            border-color: rgba(185, 28, 28, 0.4);
+        }
+
+        /* Backend status banner — shown only when the health hook flips
+           to 'disconnected'. Anchored to the top of .main; pointer-events
+           none so the user can keep interacting with the page underneath
+           while the backend recovers. */
+        .backend-status-banner {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            z-index: 70;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            padding: 8px 16px;
+            background: rgba(239, 68, 68, 0.12);
+            color: #fca5a5;
+            border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+            font-size: 12px; font-weight: 600;
+            pointer-events: none;
+            user-select: none;
+            animation: bannerSlideDown 0.3s ease;
+        }
+        [data-theme="light"] .backend-status-banner {
+            background: rgba(239, 68, 68, 0.08);
+            color: #b91c1c;
+        }
+        .backend-status-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #ef4444;
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+            animation: bannerPulse 1.4s ease-out infinite;
+        }
+        @keyframes bannerSlideDown {
+            from { transform: translateY(-100%); opacity: 0; }
+            to   { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes bannerPulse {
+            0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+            70%  { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
         /* Indeterminate progress bar used by AnalysisProgressModal.
            Backend doesn't emit a real progress signal for scan / brief,
            so the bar just continuously slides — communicates "work is
@@ -1708,6 +1785,26 @@
         }
         .welcome-subtitle {
             font-size: 15px; color: var(--text2); max-width: 480px; line-height: 1.7; margin-bottom: 8px;
+        }
+        /* Init line under the welcome stats — only renders while the
+           backend is in 'connecting' / 'warming'. Small + non-alarming
+           so the welcome screen stays inviting rather than broken. */
+        .welcome-initializing {
+            margin-top: 20px;
+            display: flex; align-items: center; gap: 10px;
+            font-size: 12px; color: var(--text3);
+            user-select: none;
+        }
+        .welcome-init-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 0 0 rgba(45, 212, 191, 0.6);
+            animation: welcomeInitPulse 1.4s ease-out infinite;
+        }
+        @keyframes welcomeInitPulse {
+            0%   { box-shadow: 0 0 0 0 rgba(45, 212, 191, 0.6); }
+            70%  { box-shadow: 0 0 0 8px rgba(45, 212, 191, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(45, 212, 191, 0); }
         }
         .welcome-stats { 
             display: flex; 

@@ -6,6 +6,10 @@ import { SourcePill } from './SourcePill'
 interface Props {
   message: ChatMessage
   isStreaming?: boolean
+  // Fired when the user clicks the inline retry button on a failed
+  // assistant message. ChatView / LibraryView resend the corresponding
+  // user prompt (the message just before this one).
+  onRetry?: () => void
 }
 
 const ARABIC_RE = /[؀-ۿ]/
@@ -88,7 +92,7 @@ async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-export function Message({ message, isStreaming }: Props) {
+export function Message({ message, isStreaming, onRetry }: Props) {
   const isUser = message.role === 'user'
   const dir = detectDir(message.content)
   const isArabic = ARABIC_RE.test(message.content) && dir === 'rtl'
@@ -167,6 +171,24 @@ export function Message({ message, isStreaming }: Props) {
             <span className="typing-indicator stream-typing">
               <span /><span /><span />
             </span>
+          )}
+          {/* Error card + retry. Shown when the assistant message
+              terminated abnormally (stream died, 429, etc.). Sits
+              between the partial content (if any) and the sources block
+              so the user sees what they got + an explicit recovery. */}
+          {!isUser && !isStreaming && message.error && (
+            <div className="msg-error" role="alert">
+              <span className="msg-error-text">{message.error}</span>
+              {onRetry && (
+                <button
+                  type="button"
+                  className="msg-error-retry"
+                  onClick={onRetry}
+                >
+                  Retry
+                </button>
+              )}
+            </div>
           )}
           {/* Hold sources until streaming finishes — backend ships them in
               the `meta` event before any tokens, but reading the answer

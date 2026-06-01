@@ -1,13 +1,15 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Sidebar } from './components/Sidebar'
 import { Header } from './components/Header'
 import { ChatView } from './components/ChatView'
 import { LibraryView } from './components/LibraryView'
 import { AnalysisView } from './components/AnalysisView'
 import { SettingsModal } from './components/SettingsModal'
+import { BackendStatusBanner } from './components/BackendStatusBanner'
 import { useToast } from './components/Toast'
+import { useBackendHealth } from './hooks/useBackendHealth'
 import { api } from './lib/api'
-import type { CorpusStats, DocumentMetadata, Mode } from './lib/types'
+import type { DocumentMetadata, Mode } from './lib/types'
 import type { AnalysisSaveBundle } from './components/Header'
 
 export default function App() {
@@ -16,7 +18,11 @@ export default function App() {
   const [activeLibraryChatId, setActiveLibraryChatId] = useState<string | null>(null)
   const [sidebarRefresh, setSidebarRefresh] = useState(0)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [stats, setStats] = useState<CorpusStats | undefined>(undefined)
+  // Health hook owns its own poll loop with status-aware cadence
+  // (fast while warming, slow when ready, retry-paced when disconnected)
+  // and surfaces stats + a 'disconnected' flag the banner consumes.
+  const health = useBackendHealth()
+  const stats = health.stats
   // "Try These" sidebar items set this; ChatView consumes it once on
   // change and immediately sends as a chat question.
   const [pendingChatPrompt, setPendingChatPrompt] = useState<string | null>(null)
@@ -32,35 +38,6 @@ export default function App() {
   const chatAttachInputRef = useRef<HTMLInputElement>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const toast = useToast()
-
-  // One-shot corpus stats fetch (powered by /health). The backend's RAG
-  // init takes ~20s so the first call may return zeros; we don't poll
-  // because once it's ready the numbers don't change for this session.
-  useEffect(() => {
-    let cancelled = false
-    let attempts = 0
-    function tick() {
-      if (cancelled) return
-      attempts += 1
-      api
-        .health()
-        .then((h) => {
-          if (cancelled) return
-          if (h.stats && h.stats.total > 0) {
-            setStats(h.stats)
-          } else if (attempts < 12) {
-            setTimeout(tick, 2500)
-          }
-        })
-        .catch(() => {
-          if (!cancelled && attempts < 12) setTimeout(tick, 2500)
-        })
-    }
-    tick()
-    return () => {
-      cancelled = true
-    }
-  }, [])
 
   function handleModeChange(next: Mode) {
     setMode(next)
@@ -119,6 +96,7 @@ export default function App() {
         collapsed={sidebarCollapsed}
       />
       <main className="main" style={{ position: 'relative' }}>
+        <BackendStatusBanner status={health.status} />
         <Header
           mode={mode}
           activeChatId={activeIdForMode}
@@ -133,6 +111,12 @@ export default function App() {
             onChatCreated={setActiveChatId}
             onChatTouched={() => setSidebarRefresh((k) => k + 1)}
             stats={stats}
+            // 'connecting' covers the first /health round-trip; 'warming'
+            // means the backend responded but ChromaDB / embeddings are
+            // still loading (~10-20s on first boot). WelcomeView shows
+            // an init overlay in both cases so the user knows why stats
+            // are blank instead of staring at "—".
+            isInitializing={health.status === 'connecting' || health.status === 'warming'}
             pendingPrompt={pendingChatPrompt}
             onPromptConsumed={() => setPendingChatPrompt(null)}
             // Composer attach → trigger our hidden input. Picker opens

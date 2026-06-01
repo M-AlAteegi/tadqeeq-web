@@ -30,6 +30,11 @@ export interface ChatMessage {
   timestamp?: string
   sources?: Source[]
   regulator?: string | null
+  // Set when an assistant message terminated abnormally (stream error,
+  // 429 rate limit, network drop). UI uses this to render an inline
+  // error card + retry button instead of treating the partial content
+  // as the final answer.
+  error?: string
 }
 
 export interface ChatSummary {

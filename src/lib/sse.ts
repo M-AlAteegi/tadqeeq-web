@@ -5,7 +5,7 @@
 // EventSource API (GET-only). We parse the text/event-stream body
 // ourselves from a fetch ReadableStream.
 
-import { getApiKey } from './api'
+import { ApiError, getApiKey } from './api'
 
 export interface SSEEvent {
   type: 'meta' | 'token' | 'done' | 'error' | 'chat'
@@ -33,11 +33,22 @@ export async function* streamPOST(
   })
   if (!res.ok || !res.body) {
     let detail = res.statusText
+    let body: unknown = null
     try {
-      const errBody = (await res.json()) as { detail?: string }
+      body = await res.json()
+      const errBody = body as { detail?: string }
       if (errBody?.detail) detail = errBody.detail
     } catch { /* ignore */ }
-    throw new Error(`${res.status} ${detail}`)
+    const retryAfterHeader = res.headers.get('Retry-After')
+    const retryAfter = retryAfterHeader
+      ? (() => {
+          const n = Number.parseInt(retryAfterHeader, 10)
+          return Number.isFinite(n) && n >= 0 ? n : undefined
+        })()
+      : undefined
+    // Throw the typed ApiError so downstream catches can branch on
+    // status (e.g. 429 → "rate limited, wait Ns", 401 → "auth rejected").
+    throw new ApiError(res.status, `${res.status} ${detail}`, body, retryAfter)
   }
 
   const reader = res.body.getReader()

@@ -3,9 +3,12 @@ import type { Mode } from '../lib/types'
 interface Props {
   mode: Mode
   stats?: { sama: number | string; cma: number | string; total: number | string }
+  // Backend is still booting — show an init line under stats so the
+  // user knows the placeholders aren't a broken backend.
+  isInitializing?: boolean
 }
 
-export function WelcomeView({ mode, stats }: Props) {
+export function WelcomeView({ mode, stats, isInitializing }: Props) {
   if (mode === 'chat') {
     return (
       <div className="welcome" id="welcome">
@@ -36,6 +39,12 @@ export function WelcomeView({ mode, stats }: Props) {
             <div className="stat-lbl">Total Indexed</div>
           </div>
         </div>
+        {isInitializing && (
+          <div className="welcome-initializing" role="status" aria-live="polite">
+            <span className="welcome-init-dot" />
+            Loading the corpus and embeddings… this takes about 15s on a cold backend.
+          </div>
+        )}
       </div>
     )
   }

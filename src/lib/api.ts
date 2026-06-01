@@ -30,12 +30,53 @@ export function setApiKey(key: string): void {
 class ApiError extends Error {
   status: number
   body?: unknown
-  constructor(status: number, message: string, body?: unknown) {
+  // Parsed from the Retry-After response header on a 429. Seconds.
+  // Used by humanizeError to render "Wait Ns" guidance in the toast.
+  retryAfter?: number
+  constructor(status: number, message: string, body?: unknown, retryAfter?: number) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.body = body
+    this.retryAfter = retryAfter
   }
+}
+
+// Parse the Retry-After header (RFC 7231): a number of seconds OR an
+// HTTP-date. We honor the seconds form which is what FastAPI / slowapi
+// emit; HTTP-date is rare here and gets ignored cleanly.
+function parseRetryAfter(h: string | null): number | undefined {
+  if (!h) return undefined
+  const n = Number.parseInt(h, 10)
+  return Number.isFinite(n) && n >= 0 ? n : undefined
+}
+
+// Map any thrown error into a friendly one-line string suitable for a
+// toast or an inline error card. Drops stack-tracey detail in favor of
+// status-specific guidance.
+export function humanizeError(e: unknown): string {
+  if (e instanceof ApiError) {
+    if (e.status === 401 || e.status === 403) {
+      return 'Auth rejected — open Settings and check your access key.'
+    }
+    if (e.status === 429) {
+      return e.retryAfter
+        ? `Rate limit reached. Wait ${e.retryAfter}s before retrying.`
+        : 'Rate limit reached. Slow down and try again.'
+    }
+    if (e.status >= 500) {
+      return `Backend error (${e.status}) — try again in a moment.`
+    }
+    // Use the parsed `detail` field if it's reasonable. e.message comes
+    // back as "<status> <detail>"; strip the leading code so the user
+    // doesn't see "404 Not found" twice.
+    return e.message.replace(/^\d+\s+/, '') || 'Request failed.'
+  }
+  if ((e as { name?: string })?.name === 'AbortError') {
+    return 'Request cancelled.'
+  }
+  const raw = String((e as { message?: string })?.message ?? e)
+  return raw.replace(/^error:\s*/i, '').trim() || 'Network error — check your connection.'
 }
 
 async function request<T>(
@@ -60,7 +101,12 @@ async function request<T>(
       (body && typeof body === 'object' && 'detail' in body && typeof (body as { detail: unknown }).detail === 'string')
         ? (body as { detail: string }).detail
         : res.statusText
-    throw new ApiError(res.status, `${res.status} ${detail}`, body)
+    throw new ApiError(
+      res.status,
+      `${res.status} ${detail}`,
+      body,
+      parseRetryAfter(res.headers.get('Retry-After')),
+    )
   }
   if (res.status === 204) return undefined as T
   return (await res.json()) as T
@@ -120,7 +166,7 @@ export const api = {
         const body = (await res.json()) as { detail?: string }
         if (body?.detail) detail = body.detail
       } catch { /* ignore */ }
-      throw new ApiError(res.status, `${res.status} ${detail}`)
+      throw new ApiError(res.status, `${res.status} ${detail}`, null, parseRetryAfter(res.headers.get('Retry-After')))
     }
     return (await res.json()) as DocumentMetadata
   },

@@ -1,17 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
-import { api } from '../lib/api'
+import { ApiError, api, humanizeError } from '../lib/api'
 import { streamPOST } from '../lib/sse'
 import type { ChatMessage, CorpusStats, Source } from '../lib/types'
 import { MessageList } from './MessageList'
 import { Composer } from './Composer'
 import { WelcomeView } from './WelcomeView'
 import { ScrollToBottomButton } from './ScrollToBottomButton'
+import { useToast } from './Toast'
 
 interface Props {
   chatId: string | null
   onChatCreated: (id: string) => void
   onChatTouched: () => void
   stats?: CorpusStats
+  // True while the backend is still booting (corpus / embeddings loading).
+  // WelcomeView shows an init overlay so the user knows why stats are
+  // blank for the first ~15s on a cold start.
+  isInitializing?: boolean
   pendingPrompt?: string | null
   onPromptConsumed?: () => void
   // Composer attach-button click — App handles the mode swap + picker
@@ -24,6 +29,7 @@ export function ChatView({
   onChatCreated,
   onChatTouched,
   stats,
+  isInitializing,
   pendingPrompt,
   onPromptConsumed,
   onAttach,
@@ -32,6 +38,7 @@ export function ChatView({
   const [isStreaming, setIsStreaming] = useState(false)
   const [streamingIndex, setStreamingIndex] = useState<number | null>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const toast = useToast()
   // When a fresh send triggers api.newChat() inside handleSend, the resulting
   // chatId prop change re-runs this useEffect, which would abort the just-
   // started stream and overwrite our optimistic bubbles with an empty
@@ -129,14 +136,18 @@ export function ChatView({
       }
     } catch (err) {
       if ((err as { name?: string })?.name !== 'AbortError') {
-        const msg = String(err)
+        const friendly = humanizeError(err)
+        // Stash the error on the message itself so Message can render an
+        // inline retry card next to whatever partial content arrived.
+        // Append a toast for the rate-limit case so the wait time is
+        // visible even if the user scrolled away from the bubble.
+        if (err instanceof ApiError && err.status === 429) {
+          toast.show(friendly, 'info')
+        }
         setMessages((prev) => {
           const copy = [...prev]
           const last = copy[copy.length - 1]
-          copy[copy.length - 1] = {
-            ...last,
-            content: (last.content || '') + `\n\n_Error: ${msg}_`,
-          }
+          copy[copy.length - 1] = { ...last, error: friendly }
           return copy
         })
       }
@@ -150,6 +161,21 @@ export function ChatView({
 
   function handleStop() {
     abortRef.current?.abort()
+  }
+
+  // Retry the prompt that produced a failed assistant message. We
+  // grab the user message immediately preceding the assistant one (the
+  // standard alternating order), drop the failed bubble + its user
+  // pair, and rerun handleSend with the original text. Wrapped in a
+  // single setMessages so React doesn't paint an interim "ghost" state.
+  function handleRetry(assistantIndex: number) {
+    if (isStreaming) return
+    const userIdx = assistantIndex - 1
+    const userMsg = messages[userIdx]
+    if (!userMsg || userMsg.role !== 'user') return
+    const prompt = userMsg.content
+    setMessages((prev) => prev.slice(0, userIdx))
+    handleSend(prompt)
   }
 
   // Consume "Try These" suggestion when it lands. Wait for ChatView to be
@@ -166,7 +192,7 @@ export function ChatView({
     return (
       <>
         <div className="chat" id="chat">
-          <WelcomeView mode="chat" stats={stats} />
+          <WelcomeView mode="chat" stats={stats} isInitializing={isInitializing} />
         </div>
         {/* key forces a remount whenever we toggle welcome ↔ messages,
             so ScrollToBottomButton's effect re-binds to the fresh #chat
@@ -181,7 +207,7 @@ export function ChatView({
 
   return (
     <>
-      <MessageList messages={messages} streamingIndex={streamingIndex} />
+      <MessageList messages={messages} streamingIndex={streamingIndex} onRetry={handleRetry} />
       <ScrollToBottomButton key={`chat-msg-${chatId ?? 'fresh'}`} targetId="chat" />
       <Composer
         onSend={handleSend}

@@ -5,9 +5,12 @@ import { Message } from './Message'
 interface Props {
   messages: ChatMessage[]
   streamingIndex?: number | null
+  // Called with the index of the assistant message whose retry button
+  // was clicked. Parent re-issues the matching user prompt.
+  onRetry?: (assistantIndex: number) => void
 }
 
-export function MessageList({ messages, streamingIndex }: Props) {
+export function MessageList({ messages, streamingIndex, onRetry }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const userScrolledUpRef = useRef(false)
 
@@ -33,7 +36,12 @@ export function MessageList({ messages, streamingIndex }: Props) {
       onScroll={handleScroll}
     >
       {messages.map((m, i) => (
-        <Message key={i} message={m} isStreaming={i === streamingIndex} />
+        <Message
+          key={i}
+          message={m}
+          isStreaming={i === streamingIndex}
+          onRetry={m.error && onRetry ? () => onRetry(i) : undefined}
+        />
       ))}
       <div ref={bottomRef} />
     </div>
