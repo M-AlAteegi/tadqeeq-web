@@ -8,7 +8,7 @@ import { SettingsModal } from './components/SettingsModal'
 import { BackendStatusBanner } from './components/BackendStatusBanner'
 import { useToast } from './components/Toast'
 import { useBackendHealth } from './hooks/useBackendHealth'
-import { api } from './lib/api'
+import { api, humanizeError } from './lib/api'
 import type { DocumentMetadata, Mode } from './lib/types'
 import type { AnalysisSaveBundle } from './components/Header'
 
@@ -58,9 +58,7 @@ export default function App() {
       setMode('analysis')
       toast.show(`Uploaded "${meta.filename}"`)
     } catch (e) {
-      const raw = String((e as { message?: string })?.message ?? e)
-      const msg = raw.replace(/^error:\s*/i, '').trim() || 'Upload failed'
-      toast.show(`Upload failed — ${msg}`, 'info')
+      toast.show(`Upload failed — ${humanizeError(e)}`, 'info')
     }
   }
 

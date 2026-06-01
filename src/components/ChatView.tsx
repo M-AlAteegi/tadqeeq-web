@@ -74,6 +74,10 @@ export function ChatView({
   }, [chatId])
 
   async function handleSend(text: string) {
+    // Guard against double-fire — rapid Enter / click between submit
+    // and the next render's isStreaming=true would otherwise queue a
+    // second request on top of the in-flight one.
+    if (abortRef.current) return
     let activeId = chatId
     if (!activeId) {
       try {

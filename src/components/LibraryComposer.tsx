@@ -92,6 +92,9 @@ export function LibraryComposer({
   }
 
   const sendDisabled = !isStreaming && (!value.trim() || disabled)
+  const MAX_LEN = 8000
+  const length = value.length
+  const showCounter = length >= MAX_LEN * 0.8
   const wrapClass = [
     'lib-composer',
     expanded ? 'expanded' : '',
@@ -127,6 +130,7 @@ export function LibraryComposer({
             rows={1}
             dir="auto"
             aria-label="Ask TadqeeqAI about a clause"
+            maxLength={MAX_LEN}
           />
           <button
             type="button"
@@ -141,7 +145,15 @@ export function LibraryComposer({
           </button>
         </div>
       </div>
-      <div className="lib-composer-hint">
+      <div
+        className="lib-composer-hint"
+        style={showCounter && length >= MAX_LEN ? { color: 'var(--danger)' } : undefined}
+      >
+        {showCounter && (
+          <>
+            {length.toLocaleString()} / {MAX_LEN.toLocaleString()} chars ·{' '}
+          </>
+        )}
         Edit <code>[Your question here]</code> after inserting a clause, then press{' '}
         <strong>Send</strong> (or Enter).
       </div>

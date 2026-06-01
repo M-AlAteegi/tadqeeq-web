@@ -9,7 +9,7 @@
 // chrome language follows the setting (not just the document's language).
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { api } from '../lib/api'
+import { api, humanizeError } from '../lib/api'
 import { AnalysisBriefCard } from './AnalysisBriefCard'
 import { AnalysisComplianceCard } from './AnalysisComplianceCard'
 import { AnalysisDocControls } from './AnalysisDocControls'
@@ -97,11 +97,9 @@ export function AnalysisView({
       setReport(null)
       toast.show(`Uploaded "${meta.filename}"`)
     } catch (e) {
-      // Strip the leading "Error: " prefix our request() wrapper adds so
-      // the toast reads cleanly. Backend usually returns concrete
-      // messages ("file too large", "unsupported file type", etc.).
-      const raw = String((e as { message?: string })?.message ?? e)
-      const msg = raw.replace(/^error:\s*/i, '').trim() || 'Upload failed'
+      // humanizeError maps backend detail + status → user-readable text
+      // (auth rejected on 401, friendly rate-limit message on 429, etc).
+      const msg = humanizeError(e)
       setError(`Upload failed: ${msg}`)
       toast.show(`Upload failed — ${msg}`, 'info')
     }

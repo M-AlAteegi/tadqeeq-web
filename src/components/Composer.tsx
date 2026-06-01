@@ -84,6 +84,14 @@ export function Composer({
   }
 
   const sendDisabled = !isStreaming && (!text.trim() || disabled)
+  // Hard cap matches the textarea maxLength below — kept in sync so
+  // the counter and the input agree on the limit. 8000 chars is well
+  // under any per-request token budget the backend would impose.
+  const MAX_LEN = 8000
+  const length = text.length
+  // Only surface the counter when the user is approaching the cap;
+  // an always-visible counter on an empty box reads as noise.
+  const showCounter = length >= MAX_LEN * 0.8
 
   return (
     <div className="input-area">
@@ -110,6 +118,7 @@ export function Composer({
           dir="auto"
           aria-label="Type your compliance question here"
           aria-multiline="true"
+          maxLength={MAX_LEN}
         />
         <button
           className={isStreaming ? 'send stop' : 'send'}
@@ -127,10 +136,11 @@ export function Composer({
         textAlign: 'center',
         marginTop: '12px',
         fontSize: '10px',
-        color: 'var(--text3)',
+        color: showCounter && length >= MAX_LEN ? 'var(--danger)' : 'var(--text3)',
         fontWeight: 600,
         userSelect: 'none',
       }}>
+        {showCounter ? `${length.toLocaleString()} / ${MAX_LEN.toLocaleString()} chars · ` : ''}
         AI can make mistakes. Verify important information.
       </div>
     </div>

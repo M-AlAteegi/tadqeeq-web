@@ -241,6 +241,9 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched }: Props) {
   // textOverride is set on retry so the prompt comes from the failed
   // bubble's user pair instead of the (possibly empty) composer.
   async function handleSend(textOverride?: string) {
+    // Same spam-click defense as ChatView — bail if a request is
+    // already in flight (abortRef tracks the live AbortController).
+    if (abortRef.current) return
     const text = (textOverride ?? composerText).trim()
     if (!text) return
 

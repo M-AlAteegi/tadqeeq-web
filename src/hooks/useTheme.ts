@@ -3,11 +3,18 @@ import { useEffect, useState } from 'react'
 const KEY = 'tadqeeq.theme'
 export type Theme = 'dark' | 'light'
 
+// Wrapped in try/catch so Safari private mode + locked-down browsers
+// (where localStorage throws on access) just fall back to the dark
+// default instead of crashing the render.
 function readInitial(): Theme {
-  const stored = (typeof localStorage !== 'undefined'
-    ? localStorage.getItem(KEY)
-    : null) as Theme | null
-  return stored === 'light' ? 'light' : 'dark'
+  try {
+    const stored = (typeof localStorage !== 'undefined'
+      ? localStorage.getItem(KEY)
+      : null) as Theme | null
+    return stored === 'light' ? 'light' : 'dark'
+  } catch {
+    return 'dark'
+  }
 }
 
 // Module-level subscriber list. Sidebar and Header both call useTheme, so
@@ -28,7 +35,11 @@ export function useTheme(): [Theme, (next: Theme) => void] {
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    localStorage.setItem(KEY, theme)
+    try {
+      localStorage.setItem(KEY, theme)
+    } catch {
+      // Persistence unavailable; theme still applies for the session.
+    }
   }, [theme])
 
   function setTheme(next: Theme) {

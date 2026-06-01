@@ -18,13 +18,26 @@ import type {
 
 const API_KEY_STORAGE = 'tadqeeq.apiKey'
 
+// Safari private mode and locked-down enterprise browsers can throw on
+// any localStorage access. Treat all failures as "no stored key" and
+// degrade silently — the worst case is the user has to re-paste the
+// key once per browser session, which beats a hard crash.
 export function getApiKey(): string {
-  return localStorage.getItem(API_KEY_STORAGE) ?? ''
+  try {
+    return localStorage.getItem(API_KEY_STORAGE) ?? ''
+  } catch {
+    return ''
+  }
 }
 
 export function setApiKey(key: string): void {
-  if (key) localStorage.setItem(API_KEY_STORAGE, key)
-  else localStorage.removeItem(API_KEY_STORAGE)
+  try {
+    if (key) localStorage.setItem(API_KEY_STORAGE, key)
+    else localStorage.removeItem(API_KEY_STORAGE)
+  } catch {
+    // Persistence unavailable — the in-memory state (if any caller holds
+    // it) still works for the current session.
+  }
 }
 
 class ApiError extends Error {
