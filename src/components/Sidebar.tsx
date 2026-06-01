@@ -16,6 +16,7 @@ interface Props {
   onChatSelect: (id: string | null) => void
   onNewChat: () => void
   onSuggestion?: (question: string) => void
+  onOpenSettings?: () => void
   refreshKey: number
   collapsed?: boolean
 }
@@ -27,6 +28,7 @@ export function Sidebar({
   onChatSelect,
   onNewChat,
   onSuggestion,
+  onOpenSettings,
   refreshKey,
   collapsed = false,
 }: Props) {
@@ -201,14 +203,15 @@ export function Sidebar({
         className="sidebar-footer"
         style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.06)' }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <button
-            className="theme-toggle-sidebar"
-            id="themeToggle"
-            title="Toggle Theme"
-            aria-label="Toggle colour theme"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button
+              className="theme-toggle-sidebar"
+              id="themeToggle"
+              title="Toggle Theme"
+              aria-label="Toggle colour theme"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            >
             {theme === 'dark' ? (
               <svg viewBox="0 0 24 24" className="icon-sun">
                 <circle cx="12" cy="12" r="5" />
@@ -226,7 +229,19 @@ export function Sidebar({
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
               </svg>
             )}
-          </button>
+            </button>
+            <button
+              className="theme-toggle-sidebar"
+              title="Settings"
+              aria-label="Open settings"
+              onClick={onOpenSettings}
+              type="button"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z" />
+              </svg>
+            </button>
+          </div>
           <div style={{
             display: 'flex',
             alignItems: 'center',

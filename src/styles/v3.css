@@ -1646,9 +1646,18 @@
         }
         [data-theme="light"] .theme-toggle-sidebar { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.1); color: #1c1c1e; }
         .theme-toggle-sidebar:hover { transform: scale(1.1); border-color: var(--accent); }
-        .theme-toggle-sidebar svg { 
-            width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.5; 
+        .theme-toggle-sidebar svg {
+            width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.5;
             transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        /* Bootstrap-style fill icons (e.g. the settings gear) override the
+           stroke-based defaults above so they render as proper silhouettes
+           instead of thick wire outlines. Same attribute-selector pattern
+           used by .attach-btn and .action-btn. */
+        .theme-toggle-sidebar svg[fill="currentColor"] {
+            fill: currentColor;
+            stroke: none;
+            width: 16px; height: 16px;
         }
         .theme-toggle-sidebar:active svg { transform: rotate(360deg); }
         .avatar svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.2; }

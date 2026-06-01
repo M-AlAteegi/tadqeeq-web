@@ -4,6 +4,7 @@ import { Header } from './components/Header'
 import { ChatView } from './components/ChatView'
 import { LibraryView } from './components/LibraryView'
 import { AnalysisView } from './components/AnalysisView'
+import { SettingsModal } from './components/SettingsModal'
 import { useToast } from './components/Toast'
 import { api } from './lib/api'
 import type { CorpusStats, DocumentMetadata, Mode } from './lib/types'
@@ -29,6 +30,7 @@ export default function App() {
   // consumes the doc on mount and clears the prop via onPreUploadConsumed.
   const [chatAttachedDoc, setChatAttachedDoc] = useState<DocumentMetadata | null>(null)
   const chatAttachInputRef = useRef<HTMLInputElement>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const toast = useToast()
 
   // One-shot corpus stats fetch (powered by /health). The backend's RAG
@@ -112,6 +114,7 @@ export default function App() {
           setActiveChatId(null)
           setPendingChatPrompt(q)
         }}
+        onOpenSettings={() => setSettingsOpen(true)}
         refreshKey={sidebarRefresh}
         collapsed={sidebarCollapsed}
       />
@@ -168,6 +171,7 @@ export default function App() {
           e.target.value = ''
         }}
       />
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </>
   )
 }
