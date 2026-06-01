@@ -1163,6 +1163,37 @@
             display: flex; flex-direction: column; gap: 14px;
         }
 
+        /* Skeleton shimmer primitive — used wherever the UI shape is
+           known but the data hasn't landed yet. Single keyframe sweeps
+           a brighter band across the bg2 base so the placeholder looks
+           "alive" without distracting. */
+        .skel {
+            display: inline-block;
+            background: linear-gradient(
+                90deg,
+                var(--bg2) 25%,
+                var(--bg3) 50%,
+                var(--bg2) 75%
+            );
+            background-size: 200% 100%;
+            animation: skelShimmer 1.4s linear infinite;
+            user-select: none;
+            pointer-events: none;
+            vertical-align: middle;
+        }
+        @keyframes skelShimmer {
+            0%   { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .skel-row { display: flex; flex-direction: column; gap: 10px; }
+        .skel-card {
+            display: flex; flex-direction: column; gap: 10px;
+            padding: 14px;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+        }
+
         /* Inline error card inside an assistant bubble. Shown when the
            SSE stream dies, the request 401s/429s, or anything else
            breaks. Distinct from the toast so the recovery affordance

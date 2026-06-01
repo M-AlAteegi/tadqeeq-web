@@ -16,6 +16,7 @@ import { ClausePreviewModal } from './ClausePreviewModal'
 import { Message } from './Message'
 import { useToast } from './Toast'
 import { ScrollToBottomButton } from './ScrollToBottomButton'
+import { Skeleton } from './Skeleton'
 
 type View = 'welcome' | 'drill' | 'focused'
 
@@ -406,6 +407,31 @@ export function LibraryView({ chatId, onChatCreated, onChatTouched, onChatGone }
             clauses={index.clauses}
             onSelect={handleCategorySelect}
           />
+        )}
+        {view === 'welcome' && !index && (
+          // Skeleton grid while /api/library/clauses is in flight. Six
+          // tiles matches the live category count so the layout doesn't
+          // jump when real data lands.
+          <div className="library-welcome">
+            <div className="lib-header">
+              <h1>Clause Library</h1>
+              <p>
+                <Skeleton width="60%" height={12} />
+                <br />
+                <Skeleton width="80%" height={12} style={{ marginTop: 6 }} />
+              </p>
+            </div>
+            <div className="lib-categories">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="skel-card" style={{ minHeight: 140 }}>
+                  <Skeleton width={40} height={40} radius={12} />
+                  <Skeleton width="70%" height={16} />
+                  <Skeleton width="90%" height={11} />
+                  <Skeleton width="40%" height={10} />
+                </div>
+              ))}
+            </div>
+          </div>
         )}
         {view === 'drill' && currentCategory && (
           <LibraryDrill

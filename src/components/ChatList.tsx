@@ -1,10 +1,15 @@
 import type { ChatSummary } from '../lib/types'
+import { Skeleton } from './Skeleton'
 
 interface Props {
   chats: ChatSummary[]
   activeId: string | null
   onSelect: (id: string) => void
   onDelete: (id: string) => void
+  // True during the initial / refresh fetch so we can distinguish
+  // "we haven't asked yet" (show skeleton rows) from "we asked and
+  // there really aren't any chats" (show the empty-state copy).
+  loading?: boolean
 }
 
 const REG_VAR: Record<string, string> = {
@@ -20,8 +25,19 @@ const ICON_MENU = (
   </svg>
 )
 
-export function ChatList({ chats, activeId, onSelect, onDelete }: Props) {
+export function ChatList({ chats, activeId, onSelect, onDelete, loading }: Props) {
   if (chats.length === 0) {
+    if (loading) {
+      // Four shimmer rows — roughly matches the .history-item visual
+      // footprint so the list doesn't reflow when real data lands.
+      return (
+        <div style={{ padding: '4px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={32} radius={8} />
+          ))}
+        </div>
+      )
+    }
     return (
       <div style={{ padding: '12px', color: 'var(--text3)', fontSize: '12px' }}>
         No recent chats yet.

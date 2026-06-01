@@ -35,18 +35,25 @@ export function Sidebar({
   const [theme, setTheme] = useTheme()
   const [chats, setChats] = useState<ChatSummary[]>([])
   const [libChats, setLibChats] = useState<LibraryChatSummary[]>([])
+  // Distinguish "fetch in flight" from "fetched, empty list" so the
+  // history pane renders skeletons during the initial load instead of
+  // jumping straight from blank → "No recent chats yet" → real data.
+  const [loadingChats, setLoadingChats] = useState(true)
   // Delete request from ChatList / LibraryChatList opens a ConfirmModal —
   // native confirm() looks out of place against the v3.2 glass aesthetic.
   const [pendingDelete, setPendingDelete] = useState<{ id: string; preview: string } | null>(null)
   const toast = useToast()
 
   const loadChats = useCallback(async () => {
+    setLoadingChats(true)
     if (mode === 'chat') {
       try {
         const { chats } = await api.listChats(20)
         setChats(chats)
       } catch {
         setChats([])
+      } finally {
+        setLoadingChats(false)
       }
     } else if (mode === 'library') {
       try {
@@ -54,7 +61,11 @@ export function Sidebar({
         setLibChats(chats)
       } catch {
         setLibChats([])
+      } finally {
+        setLoadingChats(false)
       }
+    } else {
+      setLoadingChats(false)
     }
   }, [mode])
 
@@ -141,6 +152,7 @@ export function Sidebar({
               activeId={activeChatId}
               onSelect={onChatSelect}
               onDelete={requestDelete}
+              loading={loadingChats}
             />
           ) : (
             <LibraryChatList
@@ -148,6 +160,7 @@ export function Sidebar({
               activeId={activeChatId}
               onSelect={onChatSelect}
               onDelete={requestDelete}
+              loading={loadingChats}
             />
           )}
         </div>

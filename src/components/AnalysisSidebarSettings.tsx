@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
+import { Skeleton } from './Skeleton'
 import type { DateFormat, ReportLanguage, RigorLevel, Strictness, UserSettings } from '../lib/types'
 
 const COMPLIANCE_ICON = (
@@ -85,10 +86,24 @@ export function AnalysisSidebarSettings() {
   }
 
   if (!settings) {
+    // Skeleton mirrors the real two-card layout below so swap-in
+    // doesn't reflow. One title block + two cards each carrying a
+    // header row, two select rows, and a pill row.
     return (
-      <div className="ana-section-title" style={{ padding: '12px 4px' }}>
-        Loading settings…
-      </div>
+      <>
+        <div className="ana-section-title">Analysis Settings</div>
+        {[0, 1].map((cardIdx) => (
+          <div key={cardIdx} className="ana-card" style={{ gap: 12 }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <Skeleton width={14} height={14} radius={4} />
+              <Skeleton width={120} height={12} />
+            </div>
+            <Skeleton width="100%" height={30} radius={8} />
+            <Skeleton width="100%" height={30} radius={8} />
+            <Skeleton width="100%" height={28} radius={8} />
+          </div>
+        ))}
+      </>
     )
   }
 

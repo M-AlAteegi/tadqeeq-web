@@ -1,11 +1,13 @@
 import type { LibraryChatSummary } from '../lib/types'
 import { visualFor } from '../lib/libCategoryVisuals'
+import { Skeleton } from './Skeleton'
 
 interface Props {
   chats: LibraryChatSummary[]
   activeId: string | null
   onSelect: (id: string) => void
   onDelete: (id: string) => void
+  loading?: boolean
 }
 
 const ICON_MENU = (
@@ -16,8 +18,17 @@ const ICON_MENU = (
   </svg>
 )
 
-export function LibraryChatList({ chats, activeId, onSelect, onDelete }: Props) {
+export function LibraryChatList({ chats, activeId, onSelect, onDelete, loading }: Props) {
   if (chats.length === 0) {
+    if (loading) {
+      return (
+        <div style={{ padding: '4px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={32} radius={8} />
+          ))}
+        </div>
+      )
+    }
     return (
       <div style={{ padding: '12px', color: 'var(--text3)', fontSize: '12px' }}>
         No recent clause chats yet.
